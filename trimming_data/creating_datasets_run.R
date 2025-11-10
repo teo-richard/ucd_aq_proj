@@ -317,8 +317,8 @@ if(length(outlier_check$rows_to_drop) > 0) {
 
 
 # ------ CREATE pref_diff AND pref COLUMNS ------
-pref_diff_baseline = analysis_orig$pref_cit_group_index_baseline - analysis_orig$pref_govt_index_baseline
-pref_diff_endline = analysis_orig$pref_cit_group_index_endline - analysis_orig$pref_govt_index_endline
+pref_diff_baseline = analysis$pref_cit_group_index_baseline - analysis$pref_govt_index_baseline
+pref_diff_endline = analysis$pref_cit_group_index_endline - analysis$pref_govt_index_endline
 
 analysis = analysis %>% 
   mutate(
