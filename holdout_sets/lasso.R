@@ -162,7 +162,7 @@ common_vars_d_r = common_vars_d_r %>% mutate(estimates = collapsed)
 
 
 
-common_vars_p_d %>%
+common_vars_d_e %>%
   kable(
     format = "latex",
     booktabs = TRUE,
@@ -174,4 +174,5 @@ common_vars_p_d %>%
     latex_options = c("HOLD_position"),
     full_width = FALSE
   )
+
 
