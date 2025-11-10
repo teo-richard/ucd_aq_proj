@@ -1,0 +1,24 @@
+---
+output: pdf_document
+header-includes:
+    - \usepackage{caption}
+---
+
+
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=FALSE)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(readr)
+# source("best_subset.R")
+```
+
+```{r}
+t = read_csv("holdout_sets/best_subset_table.csv")
+t %>% 
+    kable()
+```

@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Knit Rmd",
+            "type": "shell",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "rmarkdown::render('${file}')"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ]
+}
