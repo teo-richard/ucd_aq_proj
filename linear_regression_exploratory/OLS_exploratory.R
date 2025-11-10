@@ -171,7 +171,7 @@ common_vars_d_r = common_vars_d_r %>% mutate(estimates = collapsed)
 
 
 
-common_vars_d_p %>%
+common_vars_p_d %>%
   kable(
     format = "latex",
     booktabs = TRUE,

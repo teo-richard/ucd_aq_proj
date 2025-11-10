@@ -176,7 +176,7 @@ lasso_out = function(data,
     pvals = summary(mod)$coefficients[, 4]
     adj_pvals = p.adjust(pvals, method = "hochberg")[-1]
 
-    var_summary = summary(mod)$coefficients[-1,]
+    var_summary = summary(mod)$coefficients[-1, , drop = FALSE]
     final_names = rownames(var_summary)
     meaning = map$Label[match(final_names, map$Variable)]
 

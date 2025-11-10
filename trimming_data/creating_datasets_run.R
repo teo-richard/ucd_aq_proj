@@ -259,6 +259,12 @@ find_extreme_outliers = function(data, z_threshold = 4) {
     
     if(!is.numeric(x)) return(NULL)
     
+    # get statistics
+    min = min(x, na.rm = TRUE)
+    mean = mean(x, na.rm = TRUE)
+    med = median(x, na.rm = TRUE)
+    max = max(x, na.rm = TRUE)
+
     # Calculate z-scores
     z_scores = abs((x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE))
     
@@ -280,7 +286,11 @@ find_extreme_outliers = function(data, z_threshold = 4) {
                                     "none"),
       extreme_values = ifelse(length(extreme_rows) > 0,
                              paste(head(round(extreme_values, 2), 10), collapse = ", "),
-                             "none")
+                             "none"),
+      min = min,
+      mean = mean,
+      median = med,
+      max = max
     )
   })
   
@@ -306,6 +316,8 @@ find_extreme_outliers = function(data, z_threshold = 4) {
 
 # Use it with a check:
 outlier_check = find_extreme_outliers(analysis, z_threshold = 4)
+a = find_extreme_outliers(analysis, z_threshold = 4)[[1]]
+outlier_check$rows_to_drop = setdiff(outlier_check$rows_to_drop, c())
 
 if(length(outlier_check$rows_to_drop) > 0) {
   cat("Dropping", length(outlier_check$rows_to_drop), "rows with extreme outliers\n")
