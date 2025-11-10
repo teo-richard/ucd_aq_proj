@@ -230,8 +230,7 @@ analysis = analysis %>%
     TRUE ~ NA_real_  # Handle any unexpected values
   ))
 
-
-# ----- DROPPING NA VALUES -----
+# ----- DROPPING HIGH NA COLUMNS -----
 
 # Calculate proportion of NAs for each column
 na_prop = colMeans(is.na(analysis))
@@ -239,7 +238,7 @@ names(analysis)[na_prop >= 0.15]
 # Keep only columns with less than 85% NAs
 analysis = analysis[, na_prop < 0.85]
 
-# Fixing the tehsil_n_baseline one to be numeric
+# ----- FIXING tehsil_n_baseline -----
 analysis = analysis %>% 
   mutate(tehsil_n_baseline = case_when(
     tehsil_n_baseline == "Shalamar" ~ 0,
@@ -247,6 +246,73 @@ analysis = analysis %>%
     TRUE ~ NA
   ))
 
+
+# ----- CHECK OUTLIERS -----
+find_extreme_outliers = function(data, z_threshold = 4) {
+  numeric_data = data[sapply(data, is.numeric)]
+  
+  # Track which rows have extreme outliers
+  rows_to_drop = c()
+  
+  outlier_summary = map_dfr(names(numeric_data), function(var) {
+    x = data[[var]]  # Use original data to keep row indices
+    
+    if(!is.numeric(x)) return(NULL)
+    
+    # Calculate z-scores
+    z_scores = abs((x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE))
+    
+    # Find rows with extreme values
+    extreme_rows = which(z_scores > z_threshold & !is.na(z_scores))  # Added !is.na check
+    extreme_values = x[extreme_rows]
+    
+    # Add to rows to drop
+    if(length(extreme_rows) > 0) {
+      rows_to_drop <<- unique(c(rows_to_drop, extreme_rows))
+    }
+    
+    tibble(
+      variable = var,
+      n_extreme = length(extreme_rows),
+      pct_extreme = round(length(extreme_rows) / sum(!is.na(x)) * 100, 2),
+      extreme_row_numbers = ifelse(length(extreme_rows) > 0, 
+                                    paste(head(extreme_rows, 10), collapse = ", "),
+                                    "none"),
+      extreme_values = ifelse(length(extreme_rows) > 0,
+                             paste(head(round(extreme_values, 2), 10), collapse = ", "),
+                             "none")
+    )
+  })
+  
+  outlier_summary = outlier_summary %>% 
+    filter(n_extreme > 0) %>%
+    arrange(desc(n_extreme))
+  
+  if(nrow(outlier_summary) > 0) {
+    cat("Variables with extreme outliers (z-score >", z_threshold, "):\n\n")
+    print(outlier_summary, n = min(20, nrow(outlier_summary)))
+  } else {
+    cat("No extreme outliers found (z-score >", z_threshold, ")\n")
+  }
+  
+  cat("\n\nTotal unique rows with extreme outliers:", length(rows_to_drop), "\n")
+  cat("Percentage of data:", round(length(rows_to_drop) / nrow(data) * 100, 2), "%\n\n")
+  
+  return(list(
+    summary = outlier_summary,
+    rows_to_drop = rows_to_drop
+  ))
+}
+
+# Use it with a check:
+outlier_check = find_extreme_outliers(analysis, z_threshold = 4)
+
+if(length(outlier_check$rows_to_drop) > 0) {
+  cat("Dropping", length(outlier_check$rows_to_drop), "rows with extreme outliers\n")
+  analysis = analysis[-outlier_check$rows_to_drop, ]
+} else {
+  cat("No rows to drop - no extreme outliers detected!\n")
+}
 
 
 
