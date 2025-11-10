@@ -6,6 +6,86 @@ library(car)
 library(recipes)
 library(forcats)
 
+# Find the actual problem: duplicate or perfectly correlated variables
+
+# find_perfect_correlations <- function(data) {
+#   numeric_data <- data[sapply(data, is.numeric)]
+  
+#   cat("Checking", ncol(numeric_data), "numeric variables for perfect correlations\n\n")
+  
+#   # Calculate correlation matrix
+#   cor_matrix <- cor(numeric_data, use = "pairwise.complete.obs")
+  
+#   # Find near-perfect correlations (>0.9999)
+#   cor_matrix_abs <- abs(cor_matrix)
+#   diag(cor_matrix_abs) <- 0  # Ignore diagonal
+  
+#   # Find pairs
+#   high_cor_idx <- which(cor_matrix_abs > 0.9999, arr.ind = TRUE)
+#   high_cor_idx <- high_cor_idx[high_cor_idx[,1] < high_cor_idx[,2], , drop = FALSE]
+  
+#   if(nrow(high_cor_idx) == 0) {
+#     cat("No perfect correlations found!\n")
+#     cat("Checking for correlations > 0.999:\n\n")
+    
+#     high_cor_idx <- which(cor_matrix_abs > 0.999, arr.ind = TRUE)
+#     high_cor_idx <- high_cor_idx[high_cor_idx[,1] < high_cor_idx[,2], , drop = FALSE]
+    
+#     if(nrow(high_cor_idx) == 0) {
+#       cat("No correlations > 0.999 found either.\n")
+#       cat("The problem is not perfect multicollinearity.\n")
+#       cat("Check if you have the right data or if imputation is causing issues.\n")
+#       return(invisible(NULL))
+#     }
+#   }
+  
+#   cat("Variables with correlations > 0.999:\n\n")
+  
+#   problem_vars <- character()
+  
+#   for(i in 1:nrow(high_cor_idx)) {
+#     var1 <- rownames(cor_matrix)[high_cor_idx[i,1]]
+#     var2 <- colnames(cor_matrix)[high_cor_idx[i,2]]
+#     cor_val <- cor_matrix[high_cor_idx[i,1], high_cor_idx[i,2]]
+    
+#     cat(sprintf("%.8f : %s <-> %s\n", cor_val, var1, var2))
+    
+#     problem_vars <- c(problem_vars, var1, var2)
+#   }
+  
+#   problem_vars <- unique(problem_vars)
+  
+#   cat("\n\nSuggested variables to remove (appear in multiple perfect correlations):\n")
+  
+#   # Count how many times each variable appears
+#   var_counts <- table(c(
+#     rownames(cor_matrix)[high_cor_idx[,1]],
+#     colnames(cor_matrix)[high_cor_idx[,2]]
+#   ))
+  
+#   var_counts_sorted <- sort(var_counts, decreasing = TRUE)
+#   print(var_counts_sorted[var_counts_sorted > 1])
+  
+#   cat("\n\nRECOMMENDATION: Remove these variables from your dataset:\n")
+#   cat(paste(names(var_counts_sorted)[1:min(5, length(var_counts_sorted))], collapse = "\n"))
+#   cat("\n")
+  
+#   return(invisible(list(
+#     problem_pairs = high_cor_idx,
+#     problem_vars = problem_vars,
+#     var_counts = var_counts
+#   )))
+# }
+
+# find_perfect_correlations(analysis_orig)
+
+# Run this on your data BEFORE any filtering:
+# Load your original dataset, then:
+# find_perfect_correlations(analysis_orig)
+
+# Or run it after imputation to see if imputation is causing the issue:
+# find_perfect_correlations(full_df_imputed)
+
 source("trimming_data/create_fns.R")
 
 # Full dataset ------------------------------------------------------------
@@ -25,53 +105,9 @@ analysis_orig = analysis_orig %>%
   mutate(hhid = hhid, dem_q7_baseline = full_analysis$dem_q7_baseline)
 #analysis_orig = analysis_orig[analysis_orig$s2_q3_baseline != 150, ]
 
-
-
-
-# numeric_data <- analysis_orig[sapply(analysis_orig, is.numeric)]
-
-# # 1. Check for any remaining constant variables
-# constant_check <- sapply(numeric_data, function(x) {
-#   x_clean <- x[!is.na(x)]
-#   if(length(x_clean) == 0) return(TRUE)
-#   length(unique(x_clean)) <= 1
-# })
-
-# cat("Constant variables:\n")
-# print(names(constant_check[constant_check]))
-
-# # 2. Check for perfect correlations (abs correlation = 1)
-# cor_matrix <- cor(numeric_data, use = "pairwise.complete.obs")
-# perfect_cor <- which(abs(cor_matrix) > 0.9999 & abs(cor_matrix) < 1, arr.ind = TRUE)
-# perfect_cor <- perfect_cor[perfect_cor[,1] < perfect_cor[,2], , drop = FALSE]
-
-# if(nrow(perfect_cor) > 0) {
-#   cat("\nPerfect/near-perfect correlations:\n")
-#   for(i in 1:nrow(perfect_cor)) {
-#     var1 <- rownames(cor_matrix)[perfect_cor[i,1]]
-#     var2 <- colnames(cor_matrix)[perfect_cor[i,2]]
-#     cat(var1, "<->", var2, ":", cor_matrix[perfect_cor[i,1], perfect_cor[i,2]], "\n")
-#   }
-# }
-
-# # 3. Check matrix rank after removing NAs
-# X <- as.matrix(numeric_data)
-# X_complete <- X[complete.cases(X), ]
-# cat("\nRows with complete cases:", nrow(X_complete), "out of", nrow(X), "\n")
-# cat("Number of variables:", ncol(X_complete), "\n")
-
-# if(nrow(X_complete) > 0 && ncol(X_complete) > 0) {
-#   qr_result <- qr(X_complete)
-#   cat("Matrix rank:", qr_result$rank, "(should be", ncol(X_complete), ")\n")
-
-
-
-
-
-
-
-
-analysis_orig = analysis_orig %>%
+analysis = analysis_orig
+# ----- RECODE VARIABLES -----
+analysis = analysis %>%
   mutate(dem_q7_baseline = case_when(
     dem_q7_baseline %in% c(888, 999) ~ NA_character_,  # Drop don't know/refused
     dem_q7_baseline == 0 | dem_q7_baseline == 17 ~ "No formal education",
@@ -86,7 +122,7 @@ analysis_orig = analysis_orig %>%
   ))
 
 # Make it an ordered factor
-analysis_orig = analysis_orig %>%
+analysis = analysis %>%
   mutate(dem_q7_baseline = factor(dem_q7_baseline, 
                                   levels = c("No formal education", 
                                             "Primary (1-5)", 
@@ -101,16 +137,22 @@ dataset_type = "large"
 # Note: for the LARGE dataset, I already did some cleaning i.e. dropped
 #   vars with high freq of same value or high freq of missing values
 
-analysis = analysis_orig
+
+# ----- GET RID OF COLLINEAR VARIABLES -----
+
 if (dataset_type == "large") {
-  analysis = analysis %>% dplyr::select(-s9_q5_1_baseline, -inside_total_hrs_baseline) 
-  # The first is a factor variable with tons and tons of factors
-  # The second variable is almost perfectly collinear with outside_total_hrs_baseline
+  analysis = analysis %>% dplyr::select(
+    -s9_q5_1_baseline, # Too many factors
+    -inside_total_hrs_baseline, # correlated with outside total hours
+     -dem_q4_baseline, # correlated with "are there any elderly living with you?"
+     -dem_q6_baseline, # correlated with "are there any young children living with you?"
+     -s3_q11_baseline, # correlated with s3_q13_baseline
+ # correlated with s3_q13_baseline
+    -s3_q15_baseline # correlated with s3_q13_baseline
+    ) 
 
-  analysis = analysis %>% dplyr::select(-s3_q11_baseline, -s3_q13_baseline, -s3_q15_baseline) # too highly correlated with s3_q13_baseline
 }
-
-# Variables I forgot to drop in Stata
+# ----- I FORGOT TO DROP IN STATA -----
 analysis = analysis %>% 
   dplyr::select(-formdef_version_baseline, -own_house_baseline, -mean_pm2_5_airnow_baseline)
 
@@ -118,40 +160,23 @@ analysis = analysis %>%
 #   stata for that and wanted to include these in my pre-cleaned "small" dataset.
 # But for the "large" one, these were all included and any that are no longer there
 #   were just dropped in Stata due to Missing Values cleaning or High Freq cleaning
-if (dataset_type == "small"){
-  nums = c(13:30)
-  vars = c()
-  for (i in nums){
-    new_var = paste0("dem_q", i, "_baseline")
-    if (new_var %in% names(full_analysis) && !(new_var %in% names(analysis)))
-    vars = c(vars, new_var)
-  }
-  vars = c(vars, "dem_q21a_baseline")
-  # dem_q21a_baseline is Rikshaw
+# if (dataset_type == "small"){
+#   nums = c(13:30)
+#   vars = c()
+#   for (i in nums){
+#     new_var = paste0("dem_q", i, "_baseline")
+#     if (new_var %in% names(full_analysis) && !(new_var %in% names(analysis)))
+#     vars = c(vars, new_var)
+#   }
+#   vars = c(vars, "dem_q21a_baseline")
+#   # dem_q21a_baseline is Rikshaw
 
-  added_vars = full_analysis %>% 
-    dplyr::select(all_of(vars)) %>% 
-    mutate(leisure_total_hrs_baseline = full_analysis$leisure_total_hrs_baseline)
+#   added_vars = full_analysis %>% 
+#     dplyr::select(all_of(vars)) %>% 
+#     mutate(leisure_total_hrs_baseline = full_analysis$leisure_total_hrs_baseline)
 
-  analysis = analysis %>% bind_cols(added_vars)
-}
-
-
-# Dropping NA's:
-# Calculate proportion of NAs for each column
-na_prop = colMeans(is.na(analysis))
-names(analysis)[na_prop >= 0.15]
-# Keep only columns with less than 85% NAs
-analysis = analysis[, na_prop < 0.85]
-
-# Fixing the tehsil_n_baseline one to be numeric
-analysis = analysis %>% 
-  mutate(tehsil_n_baseline = case_when(
-    tehsil_n_baseline == "Shalamar" ~ 0,
-    tehsil_n_baseline == "City" ~ 1,
-    TRUE ~ NA
-  ))
-
+#   analysis = analysis %>% bind_cols(added_vars)
+# }
 
 labeled_vars = map_lgl(analysis, ~ !is.null(attr(.x, "labels")))
 var_names = names(labeled_vars[which(labeled_vars == TRUE)])
@@ -205,34 +230,27 @@ analysis = analysis %>%
     TRUE ~ NA_real_  # Handle any unexpected values
   ))
 
-# Vars where the correlation ~ 1 (i.e. vars that break the vif checking if I include them)
-# vars_dropped_in_stata = c(
-#   "Unmarried_baseline",
-#   "leisure_total_hrs_baseline"
-# )
 
-# Once you 
+# ----- DROPPING NA VALUES -----
 
+# Calculate proportion of NAs for each column
+na_prop = colMeans(is.na(analysis))
+names(analysis)[na_prop >= 0.15]
+# Keep only columns with less than 85% NAs
+analysis = analysis[, na_prop < 0.85]
 
-vars_dropped_in_stata = c(
-  "Unmarried_baseline"
-) # also the baseline and endline leisure hours ones... try adding them back later?
-
-# Super high correlation with outside total
-extra_vars_dropped_here = c(
-  "inside_total_hrs_baseline"
-)
-
+# Fixing the tehsil_n_baseline one to be numeric
+analysis = analysis %>% 
+  mutate(tehsil_n_baseline = case_when(
+    tehsil_n_baseline == "Shalamar" ~ 0,
+    tehsil_n_baseline == "City" ~ 1,
+    TRUE ~ NA
+  ))
 
 
 
 
-# Dataset for modelling (selected from Stata) -----------------------------
-
-
-# analysis = analysis_orig %>% dplyr::select(-all_of(extra_vars_dropped_here))
-
-# Creating pref_diff and pref columns ----------------------------------
+# ------ CREATE pref_diff AND pref COLUMNS ------
 pref_diff_baseline = analysis_orig$pref_cit_group_index_baseline - analysis_orig$pref_govt_index_baseline
 pref_diff_endline = analysis_orig$pref_cit_group_index_endline - analysis_orig$pref_govt_index_endline
 
@@ -242,7 +260,7 @@ analysis = analysis %>%
     pref_endline = ifelse(pref_diff_endline > 0, 1, 0)) %>%
     dplyr::select(-c("pref_govt_index_baseline", "pref_govt_index_endline", "pref_cit_group_index_baseline", "pref_cit_group_index_endline"))
 
-# Creating the wtp_paqi and wtp_epd
+# ------ CREATE wtp_paqi AND wtp_epd COLUMNS ------
 analysis = analysis %>% 
   mutate(
     wtp_paqi = ifelse(epd_treatment_baseline == 0, wtp_bdm_1_endline, wtp_bdm_1a_endline),
@@ -252,7 +270,7 @@ analysis = analysis %>%
     -all_of(c("wtp_bdm_1_endline", "wtp_bdm_1a_endline"))
   )
 
-# Dropping outcome NAs ----------------------------------------------------
+# ------ DROPPING OUTCOME NAs ------
 
 analysis = analysis[!is.na(analysis$wtp_paqi), ]
 analysis = analysis[!is.na(analysis$wtp_epd), ]
@@ -263,7 +281,7 @@ analysis = analysis[!is.na(analysis$pref_endline), ]
 
 
 
-# Splitting into groups groups -----------------------------------------
+# ------ SPLIT INTO TREATMENT GROUPS ------
 # keep epd_treatment_baseline for now because we need it for OLS laster
 
 epd_df = analysis %>% 
@@ -276,7 +294,7 @@ full_df = analysis
 
 
 
-# Checking high frequency -------------------------------------------------
+# ------ CHECK HIGH FREQUENCY ------
 
 drop_epd = drop_high_freq(epd_df)
 drop_paqi = drop_high_freq(paqi_df)
@@ -289,13 +307,13 @@ paqi_df_no_high_freq = paqi_df %>% dplyr::select(-all_of(drop_vars_high_freq))
 full_df_no_high_freq = full_df %>% dplyr::select(-all_of(drop_vars_high_freq))
 
 
-# Imputing ----------------------------------------------------------------
+# ------ IMPUTE ------
 
 epd_df_imputed = impute(epd_df_no_high_freq)
 paqi_df_imputed = impute(paqi_df_no_high_freq)
 full_df_imputed = impute(full_df_no_high_freq)
 
-# Setting up for VIF ------------------------------------------------------------
+# ------ SET UP FOR VIF ------
 # Drop the outcome variables not looking at because they aren't predictor variables so I don't want them in my VIF calculations
 # Some of these are unused but I've left them in case I want to replicate my earlier problems with the VIF calculations
 
@@ -336,7 +354,7 @@ vif_prune_diagnostic(full_wtp_epd, "wtp_epd", threshold = 2.5)[[2]]
 # paqi_wtp1_e = paqi_df_imputed %>% dplyr::select(-all_of(vif_wtp1_e))
 # aqi_wtp1a_e = paqi_df_imputed %>% dplyr::select(-all_of(vif_wtp1a_e))
 
-# Checking VIF ------------------------------------------------
+# ------ CHECK VIF ------
 
 a = vif_prune(data = full_pref_b, outcome = "pref_baseline")
 b = vif_prune(full_pref_e, "pref_endline")
@@ -386,7 +404,7 @@ paqi_df_viffed = paqi_df_imputed %>% dplyr::select(-all_of(vif_to_drop)) %>%
 
 which(sapply(full_df_clean, function(x) class(x)) == "character")
 
-# Combining rare factor levels
+# ------ COMBINE RARE FACTOR LEVELS ------
 combine_rare_levels = function(df, min_prop = 0.01) {
   df %>%
     mutate(across(where(~ is.factor(.) || is.character(.)), 
@@ -397,6 +415,7 @@ full_df_clean = combine_rare_levels(full_df_viffed, min_prop = 0.02)
 epd_df_clean = combine_rare_levels(epd_df_viffed, min_prop = 0.02)
 paqi_df_clean = combine_rare_levels(paqi_df_viffed, min_prop = 0.02)
 
+# ------ WRITING (keep commented out unless you want to write for sure) ------
 
 # write_csv(epd_df_clean, "cleaned_data/LARGE_df_epd_clean.csv")
 # write_csv(paqi_df_clean, "cleaned_data/LARGE_df_paqi_clean.csv")
