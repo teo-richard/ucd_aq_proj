@@ -97,18 +97,7 @@ caption.above = TRUE
 # Theory says: income/income source, education, concern about air quality, vulnerability (elderly/kids)
 # My hypotheses: political affiliation (use news as a proxy), ability to clean own air (fan)
 interactions_mod = lm(wtp_dif ~ 
-    epd_treatment_baseline : (
-        s2_q3_baseline + # Age
-        asset_index_baseline + # asset index
-        dem_q31_baseline + # Source of income
-        dem_q7_baseline + # Categorical education
-        air_worry_baseline + # worried about AQ?
-        dem_q3_baseline + # Elderly live with you?
-        s9_q7_field_count_baseline + # Num social media
-        dem_q5_baseline + # Young children live with you?
-        s9_q5_3_7_baseline + # ARY News
-        dem_q30_baseline # Num fans
-        ),
+    epd_treatment_baseline * work_total_hrs_baseline,
     data = df_full_clean_wtp_dif)
 summary(interactions_mod)
 # Some nice potential interaction effects on asset index
@@ -129,6 +118,7 @@ plot_interact = function(fac, i_var, name_i_var) {
         )
 }
 
+plot_interact(FALSE, work_total_hrs_baseline, "Total Hrs Work")
 plot_interact(TRUE, s2_q3_baseline, "Age")
 plot_interact(TRUE, dem_q31_baseline, "Income Source")
 plot_interact(TRUE, dem_q7_baseline, "Type of Education")
