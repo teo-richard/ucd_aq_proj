@@ -52,7 +52,7 @@ tidy_up = function(mod) {
         MSE = mean(residuals(mod)^2, na.rm = TRUE)
     )
 
-    return(list(final_mod, stats, adj_pvalues))
+    return(list(final_mod, stats, adj_pvalues, summary_mod))
 }
 
 get_model_info = function(data, outcome, drop_vars) {
@@ -79,7 +79,7 @@ get_model_info = function(data, outcome, drop_vars) {
     tidied_f = tidied %>% dplyr::select(-term)
     num_sel = nrow(tidied_f)
     info_s = tidy_up(info)[[2]] %>% mutate(type = paste("ols", code, sep = "_"), selected = num_sel, .before = r.squared)
-    return(list(tidied_f, info_s, data_name))
+    return(list(tidied_f, info_s, data_name, summary(info)))
 }
 
 
@@ -88,6 +88,7 @@ get_model_info = function(data, outcome, drop_vars) {
 pd_wp = get_model_info(data = df_paqi_clean, outcome = "wtp_paqi", drop_vars = drop_vars_wtp_paqi)
 pd_wp_s = pd_wp[[2]]
 pd_wp_f = pd_wp[[1]]
+pd_wp[[4]]
 write_csv(pd_wp_s, "linear_regression_exploratory/ols_expl_rmd_files/pd_wp_s.csv")
 
 

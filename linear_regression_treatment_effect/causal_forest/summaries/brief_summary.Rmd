@@ -1,0 +1,53 @@
+---
+output:
+    pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+### Spaghetti at the Wall for What Predicts Willingness to Pay
+
+I put all 50 variables into OLS and Lasso-->OLS models to try to figure out which variables are able to predict willingness to pay. 
+
+- Nothing is very good at predicting absolute willingness to pay (very hard to predict in general)
+- For absolute WTP, various models ran on the different combinations of treatment group and type of WTP (PAQI or EPD) and no clear results (i.e. looks like nothing predicts abs. WTP very well)
+  - The Lasso --> OLS pipeline helps sparsity but hurts R^2
+- The models are better at predicting relative WTP but still not great
+- Treatment is by far best predictor of relative willingness to pay (explains the most variation by a long shot) using R^2 as the criteria
+  - On just half the data to mimic the smaller sample size that the other regressions were run on when splitting up by treatment group, 
+    R^2 and coefficients are about the same when regressing relative WTP on treatment only
+  - When adding all 51 controls, R^2 increases by 7-8% and coefficients remain about the same
+- Log odds shows that treatment can predict binary relative WTP with almost total certainty
+
+
+Some contendors for predicting relative willingness to pay are:
+
+- Work hours
+- If their day is typicaly or not (maybe proxy for routine-based people?)
+
+### Causal Forest
+
+To look at the heterogenous treatment effects, I ran causal forests with all the variables. 
+
+
+- Work hours is by far the most "important" variable according to causal forests, followed by tehsil and baseline government approval
+- Even after trimming off extreme values of work hours, the importance ranking remains about the same
+
+### Heterogeneity Analysis
+
+I looked at the treatment effects with different quartiles of work hours. 
+
+
+- As the quartile for work hours increases, the treatment effect gets more negative and the R-squared increases dramatically
+- Trimming off extreme values does not change it much and in fact the interaction effect gets slightly more negative
+
+### Conclusion
+
+- Spaghetti method finds no variables that are clearly very important to absolute willingness to pay that show up over several combinations of treatment type and WTP type
+  - Some potential contendors do exist but no clear winner(s)
+- Same thing for relative WTP except for treatment: treatment seems to be good at predicting relative WTP and great at predicting which type of forecasting a person prefers (binary relative WTP)
+- Causal forests finds that the most important variable in explaining the treatment effect is work hours, which may be acting as a proxy for income
+- Running OLS regressing relative WTP on each quartile of work hours shows significant coefficients that get more negative as the quartile increases
+- Trimming off extreme values of work hours does not result in any substantial change in coefficients or causal forests estimates

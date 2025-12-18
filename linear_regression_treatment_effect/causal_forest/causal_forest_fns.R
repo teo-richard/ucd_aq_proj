@@ -11,8 +11,8 @@ create_bar_plot = function(var_name) {
         var,
         breaks = breaks,
         labels = c(
-            paste(breaks[1], breaks[2], sep = " - "), 
-            paste(breaks[2] + 0.01, breaks[3], sep = " - "), 
+            paste(round(breaks[1], 2), round(breaks[2], 2), sep = " - "), 
+            paste(round(breaks[2], 2) + 0.01, round(breaks[3], 2), sep = " - "), 
             paste(breaks[3] + 0.01, breaks[4], sep = " - "),
             paste(breaks[4] + 0.01, breaks[5], sep = " - ")
         ),

@@ -3,8 +3,6 @@ library(broom)
 library(effsize)
 library(texreg)
 
-# NOTE!!!! DF_FULL_CLEAN DOES **NOT** HAVE EDUCATION IN YEARS, JUST EDUCATION AS A CATEGORICAL VARIABLE
-
 # What is the effect of *treatment* on willingness to pay? (WTP for PAQI and EPD)
 
 
@@ -12,7 +10,7 @@ library(texreg)
 df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
 df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
 df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid) # this one has continuous education
-df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
+df_full_clean_catedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
 
 
 
@@ -23,10 +21,13 @@ drop_vars_wtp_paqi = c("pref_baseline", "pref_endline", "wtp_epd", "wtp_dif")
 drop_vars_wtp_epd = c("pref_baseline", "pref_endline", "wtp_paqi", "wtp_dif")
 
 
-df_full_clean_wtp_paqi = df_full_clean  %>% dplyr::select(-all_of(drop_vars_wtp_paqi))
-df_full_clean_wtp_epd = df_full_clean  %>% dplyr::select(-all_of(drop_vars_wtp_epd))
-df_full_clean_wtp_dif = df_full_clean %>% 
+df_full_clean_wtp_paqi = df_full_clean_catedu %>% dplyr::select(-all_of(drop_vars_wtp_paqi))
+df_full_clean_wtp_epd = df_full_clean_catedu  %>% dplyr::select(-all_of(drop_vars_wtp_epd))
+df_full_clean_catedu_wtp_dif = df_full_clean_catedu %>% 
                             dplyr::select(-all_of(c("pref_baseline", "pref_endline", "wtp_paqi", "wtp_epd")))
+df_full_clean_contedu_wtp_dif = df_full_clean_contedu %>% 
+                            dplyr::select(-all_of(c("pref_baseline", "pref_endline", "wtp_paqi", "wtp_epd")))       
+ 
 
 # ::::::::::::::::::::::::: PREDICTING ABSOLUTE WTP :::::::::::::::::::::::::
 
@@ -53,12 +54,13 @@ epd_results = tibble(estimate = epd_coefs[2, 1], se = epd_coefs[2, 2], pval = ep
 
 # ::::::::::::::::::::::::: PREDICTING RELATIVE WTP, NO INTERACTIONS :::::::::::::::::::::::::
 
-# ----- PREDICT RELATIVE WTP, TREATMENT ONLY -----
+# --------------- FULL DATASET ---------------------------------------------
+# ///// PREDICT RELATIVE WTP, TREATMENT ONLY \\\\\
 treatment_only_mod = lm(wtp_dif ~ epd_treatment_baseline,
-            data = df_full_clean_wtp_dif)
-summary_treatment_only_mod = summary(treatment_only_mod)
-dif_coefs = summary(treatment_only_mod)$coefficients
+            data = df_full_clean_catedu_wtp_dif)
+summary(treatment_only_mod)
 # R-squared = 0.4164, F-statistic pvalue = 0
+# Coef = -31.9
 
 texreg(
   treatment_only_mod,
@@ -71,16 +73,19 @@ texreg(
     caption.above = TRUE
 )
 
-# ----- PREDICT RELATIVE WTP, NO TREATMENT ALL OTHER VARIABLES -----
-dif_no_treat_mod = lm(wtp_dif ~ ., data = df_full_clean_wtp_dif %>% select(-epd_treatment_baseline))
+# ///// PREDICT RELATIVE WTP, NO TREATMENT ALL OTHER VARIABLES \\\\\
+dif_no_treat_mod = lm(wtp_dif ~ ., data = df_full_clean_catedu_wtp_dif %>% select(-epd_treatment_baseline))
 summary(dif_no_treat_mod)
 # R-squared = 0.06, F-statistic p-value 0.3941 (0.3917 when I had continuous education)
 
-# ----- PREDICT RELATIVE WTP, ALL VARIABLES -----
-full_mod = lm(wtp_dif ~ ., data = df_full_clean_wtp_dif)
+# ///// PREDICT RELATIVE WTP, ALL VARIABLES \\\\\
+full_mod = lm(wtp_dif ~ ., data = df_full_clean_catedu_wtp_dif)
 summary(full_mod)
 # R-squared hardly increases (0.4564), epd_treatment_baseline is still highly significant
 # F-statistic P-value = 0
+# Coef = -31.9
+
+
 
 texreg(
   full_mod,
@@ -92,6 +97,64 @@ texreg(
   float.pos = "H",
 caption.above = TRUE
 )
+
+
+# --------------- SPLIT DATASET INTO RANDOM HALVES ---------------------------------------------
+# to see if we get same results using less observations
+
+set.seed(123)
+idx1 = sample(1:nrow(df_full_clean_catedu_wtp_dif), size = 0.5*nrow(df_full_clean_catedu_wtp_dif), replace = FALSE)
+first_half_dat = df_full_clean_catedu_wtp_dif[idx1, ]
+second_half_dat = df_full_clean_catedu_wtp_dif[-idx1, ]
+
+# ///// PREDICT RELATIVE WTP, TREATMENT ONLY \\\\\
+treatment_only_mod_1st_half = lm(wtp_dif ~ epd_treatment_baseline,
+            data = first_half_dat)
+summary(treatment_only_mod_1st_half)
+# R-squared = 0.4055, F-statistic pvalue = 0
+# Coef = -30.2
+
+treatment_only_mod_2nd_half = lm(wtp_dif ~ epd_treatment_baseline,
+            data = second_half_dat)
+summary(treatment_only_mod_2nd_half)
+# R-squared = 0.4279, F-statistic pvalue = 0
+# Coef = -33.6
+
+
+# ///// PREDICT RELATIVE WTP, NO TREATMENT ALL OTHER VARIABLES \\\\\
+dif_no_treat_1st_half = lm(wtp_dif ~ ., data = first_half_dat %>% select(-epd_treatment_baseline))
+summary(dif_no_treat_1st_half)
+# R-squared = 0.1200, F-statistic p-value 0.3941
+
+dif_no_treat_2nd_half = lm(wtp_dif ~ ., data = second_half_dat %>% select(-epd_treatment_baseline))
+summary(dif_no_treat_2nd_half)
+# R-squared = 0.1246, F-statistic p-value 0.3941
+
+
+# ///// PREDICT RELATIVE WTP, ALL VARIABLES \\\\\
+full_mod_1st_half = lm(wtp_dif ~ ., data = first_half_dat)
+summary(full_mod_1st_half)
+# R-squared does increase some relative to with only treatment (0.4055 to 0.4736), epd_treatment_baseline is still highly significant
+# F-statistic P-value = 0
+# Coef = -30.45
+
+full_mod_2nd_half = lm(wtp_dif ~ ., data = second_half_dat)
+summary(full_mod_2nd_half)
+# R-squared does increase some (0.4279 to 0.4986), epd_treatment_baseline is still highly significant
+# F-statistic P-value = 0
+# Coef = -33.7
+
+
+# Overall despite using half of the data to mimic the smaller sample size when splitting by treatment group, the R-squared is about the same ish 
+#   (still in the 0.4 to 0.5 range). And the coefs are all similar (about -30 to -34 range)
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 # ::::::::::::::::::::::::: LOOKING AT INTERACTIONS :::::::::::::::::::::::::
 # Theory says: income/income source, education, concern about air quality, vulnerability (elderly/kids)
