@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# R
+.Rhistory
+.Rdata
+
+# VS Code
+.vscode/
+
+# Lint
+.lintr
+
