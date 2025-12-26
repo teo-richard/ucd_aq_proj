@@ -3,9 +3,11 @@ library(tidyverse)
 library(readxl)
 library(haven)
 
+# Note: Using categorical education because this makes more sense intuitively (vs. continuous education)
+
 df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
 df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
-df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid, -dem_q7_baseline) # this one has continuous education
+# df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid, -dem_q7_baseline) # this one has continuous education
 df_full_clean_catedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
 
 full_analysis = read_dta("original_files/stata files/Analysis_data_saved.dta")
@@ -93,6 +95,7 @@ df_for_bar =
 
 create_bar_plot("work_total_hrs_baseline")
 ggsave("linear_regression_treatment_effect/causal_forest/images/work_hrs.png", width = 5, height = 2.5, dpi = 300)
+ggsave("linear_regression_treatment_effect/causal_forest/images/work_hrs_whitebg.png", width = 5, height = 2.5, dpi = 300, bg = "white") # white background
 
 create_bar_plot("tehsil_n_baseline")
 ggsave("linear_regression_treatment_effect/causal_forest/images/tehsil.png", width = 5, height = 2.5, dpi = 300)

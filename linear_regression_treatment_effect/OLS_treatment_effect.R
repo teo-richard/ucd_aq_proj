@@ -5,11 +5,13 @@ library(texreg)
 
 # What is the effect of *treatment* on willingness to pay? (WTP for PAQI and EPD)
 
+# Note: using categorical education
+
 
 # Reading in data: Large
 df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
 df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
-df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid) # this one has continuous education
+# df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid) # this one has continuous education
 df_full_clean_catedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
 
 
@@ -25,8 +27,8 @@ df_full_clean_wtp_paqi = df_full_clean_catedu %>% dplyr::select(-all_of(drop_var
 df_full_clean_wtp_epd = df_full_clean_catedu  %>% dplyr::select(-all_of(drop_vars_wtp_epd))
 df_full_clean_catedu_wtp_dif = df_full_clean_catedu %>% 
                             dplyr::select(-all_of(c("pref_baseline", "pref_endline", "wtp_paqi", "wtp_epd")))
-df_full_clean_contedu_wtp_dif = df_full_clean_contedu %>% 
-                            dplyr::select(-all_of(c("pref_baseline", "pref_endline", "wtp_paqi", "wtp_epd")))       
+# df_full_clean_contedu_wtp_dif = df_full_clean_contedu %>% 
+#                            dplyr::select(-all_of(c("pref_baseline", "pref_endline", "wtp_paqi", "wtp_epd")))       
  
 
 # ::::::::::::::::::::::::: PREDICTING ABSOLUTE WTP :::::::::::::::::::::::::
@@ -161,13 +163,13 @@ summary(full_mod_2nd_half)
 # My hypotheses: political affiliation (use news as a proxy), ability to clean own air (fan)
 interactions_mod = lm(wtp_dif ~ 
     epd_treatment_baseline * work_total_hrs_baseline,
-    data = df_full_clean_wtp_dif)
+    data = df_full_clean_catedu_wtp_dif)
 summary(interactions_mod)
 # Some nice potential interaction effects on asset index
 
 # ::::::::::::::::::::::::: INTERACTION PLOTS :::::::::::::::::::::::::
 plot_interact = function(fac, i_var, name_i_var) {
-    dat = df_full_clean_wtp_dif
+    dat = df_full_clean_catedu_wtp_dif
   if (fac) {
     dat = dat %>% mutate({{i_var}} := as.factor({{i_var}}))
   }
@@ -198,7 +200,7 @@ plot_interact(TRUE, dem_q30_baseline, "Number of Fans")
 # ---- PLOTTING WTP BY TREATMENT -----
 
 # Plotting the data for visuals
-df = df_full_clean %>% mutate(wtp_dif = wtp_dif) %>% select(wtp_paqi, wtp_epd, wtp_dif, epd_treatment_baseline)
+df = df_full_clean_catedu %>% mutate(wtp_dif = wtp_dif) %>% select(wtp_paqi, wtp_epd, wtp_dif, epd_treatment_baseline)
 df_long = df %>% 
     pivot_longer(cols = c("wtp_paqi", "wtp_epd", "wtp_dif"), names_to = "pay_to", values_to = "pay") %>% 
     mutate(treatment = ifelse(epd_treatment_baseline == 1, "EPD", "PAQI")) %>% 
@@ -219,3 +221,4 @@ plot = ggplot(df_long, aes(x = factor(treatment), y = pay, fill = treatment)) +
         plot.title = element_text(margin = margin(b = 20)))
 
 ggsave("linear_regression_treatment_effect/temp_plot.png", plot, width = 10, height = 10)
+# Plot is with categorical education
