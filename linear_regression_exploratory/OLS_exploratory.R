@@ -34,6 +34,7 @@ lr_out = function(outcome_var, data, drop_vars) {
     return(mod)
 }
 
+
 tidy_up = function(mod) {
     summary_mod = summary(mod)
     tidy_mod = tidy(summary_mod)
@@ -54,6 +55,7 @@ tidy_up = function(mod) {
 
     return(list(final_mod, stats, adj_pvalues, summary_mod))
 }
+
 
 get_model_info = function(data, outcome, drop_vars) {
     data_name = deparse(substitute(data))
