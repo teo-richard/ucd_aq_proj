@@ -1,8 +1,8 @@
 ---
 title: "Air Quality Forecasting Willingness to Pay Study"
-subtitle: "Comprehensive Research Report and Analysis"
-author: "Research Analysis Report"
-date: "December 28, 2025"
+subtitle: "Undergraduate Research Project"
+author: "Teo Richard"
+date: "December 30, 2025"
 geometry: margin=1in
 fontsize: 11pt
 linestretch: 1.15
@@ -19,16 +19,21 @@ header-includes:
 ---
 
 \newpage
+
+**Acknowledgments**
+
+This undergraduate research project uses data from a study on air quality forecasting preferences in Pakistan. Professor Arman Rezaee (Department of Economics, University of California, Davis) is an author on the research project and provided access to the data.
+
 \tableofcontents
 \newpage
 
 # Executive Summary
 
-This repository contains an exploratory empirical analysis examining willingness to pay (WTP) for air quality forecasting services in Punjab, Pakistan. The study investigates which variables predict WTP and examines how treatment attribution to different sources—EPD (Environmental Protection Department, government-run) versus PAQI (Pakistan Air Quality Initiative, citizen-run)—affects consumer preferences.
+This report documents an undergraduate exploratory empirical analysis examining willingness to pay (WTP) for air quality forecasting services in Punjab, Pakistan, using data from a research project studying air quality forecasting preferences. The study investigates which variables predict WTP and examines how treatment attribution to different sources—EPD (Environmental Protection Department, government-run) versus PAQI (Pakistan Air Quality Initiative, citizen-run)—affects consumer preferences.
 
 The analysis began as a purely exploratory investigation into what factors predict WTP for air quality forecasting. After testing multiple statistical approaches (OLS, Lasso, Bayesian Spike-and-Slab), the data revealed that treatment assignment was the dominant predictor, explaining 41.6% to 67.2% of variance in relative WTP depending on the treatment group. This finding motivated a shift in focus toward understanding heterogeneous treatment effects using causal forests.
 
-**Key Finding:** Treatment assignment dominates all other factors in predicting relative WTP preferences. Few demographic, behavioral, or household variables consistently predict absolute WTP. However, causal forest analysis reveals meaningful heterogeneity in treatment effects, with work hours (as an income proxy), geographic location, and baseline government approval explaining approximately 55% of treatment effect variation.
+**Key Finding:** Treatment assignment dominates all other factors in predicting relative WTP preferences. No demographic, behavioral, or household variables consistently predict absolute WTP. However, causal forest analysis reveals meaningful heterogeneity in treatment effects, with work hours (as an income proxy), geographic location, and baseline government approval explaining approximately 55% of treatment effect variation.
 
 \newpage
 
@@ -60,9 +65,9 @@ This was not a hypothesis-driven study testing whether specific variables (A) af
   - **Economic proxies**: Work hours (no direct income variable collected)
   - **Behavioral variables**: Time spent on air quality information, forecast error rates when guessing
   - **Attitudinal measures**: Air pollution concern, government approval, preference indices
-  - **Outcome measures**: BDM (Bidding Data Model) for WTP elicitation
+  - **Outcome measures**: BDM (Bidding Data Model) for WTP
 
-**Note on income**: The dataset does not include a direct income variable. Work hours serves as an income proxy, which is reasonable in the Pakistan context based on domain knowledge showing that individuals with lower incomes tend to have lower trust in government institutions.
+**Note on income**: The dataset does not include a direct income variable. Work hours may serve as an income proxy, which is reasonable in the Pakistan context based on domain knowledge showing that individuals with lower incomes tend to have lower trust in government institutions.
 
 \newpage
 
@@ -128,15 +133,17 @@ The exploratory analysis tested multiple statistical approaches to identify whic
 - Posterior inclusion probabilities calculated for each predictor
 - Analysis conducted on full dataset predicting relative WTP (wtp_dif)
 
-**Results**: The highest posterior inclusion probability was relatively low, indicating substantial uncertainty about which variables truly predict relative WTP. Most variables had inclusion probabilities well below 50%, suggesting weak evidence for any individual predictor when treatment is not included in the model.
-
-## 3.2 Comparison: OLS vs. Lasso
-
-A key comparison examined whether machine learning variable selection (Lasso) improved predictive performance over standard OLS regression. Both approaches were compared on the same outcomes to evaluate whether regularization and automated variable selection provided benefits.
+**Results**: The highest posterior inclusion probability was very low, indicating substantial uncertainty about which variables truly predict relative WTP. Most variables had inclusion probabilities well below 50%, suggesting weak evidence for any individual predictor when treatment is not included in the model.
 
 ![Spike-and-Slab Coefficient Estimates](spike_and_slab/spikeslabcoefs.png){width=85%}
 
 **Figure 1**: Bayesian Spike-and-Slab posterior coefficient distributions showing relationship between inclusion probability and coefficient value. Most variables cluster near zero inclusion probability, indicating weak evidence for predictive value.
+
+## 3.2 Comparison: OLS vs. Lasso
+
+A comparison examined whether machine learning variable selection (Lasso) improved predictive performance over standard OLS regression. Both approaches were compared on the same outcomes to evaluate whether regularization and automated variable selection provided benefits.
+
+This comparison was of interest simply because both these methods were used in the exploratory analysis, but the comparison is not the purpose of the investigation.
 
 Table 1: **Model Performance Comparison - OLS vs. Lasso**
 
@@ -160,7 +167,7 @@ Table 1: **Model Performance Comparison - OLS vs. Lasso**
 - No demographic, behavioral, or household variable robustly predicts absolute WTP across treatment groups
 - Variables selected by OLS vary substantially by treatment group and outcome type
 - Lasso selects many variables but with poor out-of-sample performance (low R²)
-- Bayesian Spike-and-Slab typically selects 1-15 variables per model, with low posterior inclusion probabilities
+- Bayesian Spike-and-Slab typically selects 1-15 variables per model, with extremely low posterior inclusion probabilities
 
 ### Treatment Assignment Dominates for Relative WTP
 
@@ -198,7 +205,7 @@ Table 2: **Treatment Effect Model Comparison (Full Dataset)**
 1. Treatment alone explains **41.6% of variance** in relative WTP
 2. All other variables combined (without treatment) explain only **6% of variance**
 3. Adding covariates to the treatment model increases R² by only 4 percentage points (to 45.6%)
-4. Treatment coefficient remains stable at approximately -31.9 PKR regardless of controls
+4. Treatment effect coefficient remains stable at approximately -31.9 PKR regardless of controls
 
 ### Stability Across Random Splits
 
@@ -234,7 +241,7 @@ Logistic regression predicting binary preference for EPD vs. PAQI:
 
 # 5. Heterogeneous Treatment Effects
 
-While treatment dominates overall preferences, there may be meaningful variation in treatment effects across different types of households. Causal forests provide a nonparametric approach to discovering such heterogeneity.
+While treatment dominates overall preferences, there may be meaningful variation in treatment effects across different types of households. Causal forests provide a nonparametric approach to investigating this.
 
 ## 5.1 Causal Forest Implementation
 
@@ -314,7 +321,7 @@ Work hours emerged as the dominant moderator of treatment effects.
 - Negative government approval → More resistant to EPD treatment
 - Consistent with Bayesian updating models where prior beliefs moderate new information
 
-## 5.6 Other Moderators
+## 5.6 Other Important Variables
 
 ![Treatment Effect by Social Media Platforms](linear_regression_treatment_effect/causal_forest/images/num_social_media.png){width=70%}
 
@@ -435,7 +442,7 @@ The study employed multiple complementary approaches:
   - Assumptions for the selective inference package were not met
   - Package is not actively maintained
   - Developer (Joshua Loftus) did not respond to inquiry
-- **Status**: Results not included in final analysis due to methodological concerns
+- **Outcome**: Results not included in final analysis due to methodological concerns
 
 ## 7.5 Causal Forest Innovation
 
@@ -509,9 +516,9 @@ The analytical pipeline:
 
 # 9. Conclusions
 
-## 9.1 Main Contributions
+## 9.1 Contributions
 
-### Substantive Contribution
+### Main Contribution
 
 The data reveal that **treatment assignment dominates other factors** in determining preferences for public information services. Few demographic, economic, or behavioral variables consistently predict WTP, but exposure to a particular service creates strong preferences for that service. This pattern is consistent with the "mere exposure effect" from behavioral psychology, though the current analysis does not test this mechanism explicitly.
 
@@ -529,11 +536,11 @@ The findings suggest that **increasing exposure** to government air quality fore
 
 ## 9.2 Key Takeaways
 
-1. **For researchers**: Exploratory analysis with multiple methods can reveal patterns in data without requiring domain expertise or prior hypotheses. Agreement across methods on negative findings (few predictors of absolute WTP) is as informative as agreement on positive findings. Machine learning variable selection (Lasso) does not always improve prediction over OLS.
+1. Exploratory analysis with multiple methods can reveal patterns in data without requiring domain expertise or prior hypotheses. Agreement across methods on negative findings (few predictors of absolute WTP) is as informative as agreement on positive findings. Machine learning variable selection (Lasso) does not always improve prediction over OLS.
 
-2. **For policymakers**: Service exposure appears more important than demographic or attitudinal factors in shaping preferences. Income and geographic targeting may improve effectiveness.
+2. Service exposure appears more important than demographic or attitudinal factors in shaping preferences. Income and geographic targeting may improve effectiveness.
 
-3. **For practitioners**: The barrier to preference formation may be awareness and access rather than fundamental differences in service quality perceptions.
+3. The barrier to preference formation may be awareness and access rather than fundamental differences in service quality perceptions.
 
 ## 9.3 Limitations
 
@@ -545,7 +552,7 @@ The findings suggest that **increasing exposure** to government air quality fore
 **Methodological limitations**:
 - Selective inference package assumptions not met; results not included
 - Best subset selection not feasible with large variable set
-- Limited external validity beyond Punjab, Pakistan context
+- Potentially limited external validity beyond Punjab, Pakistan context
 
 **Measurement limitations**:
 - BDM elicitation method may not perfectly capture true WTP
@@ -604,14 +611,7 @@ The findings suggest that **increasing exposure** to government air quality fore
 
 ## A.3 Data Privacy Note
 
-Per the research protocol, this analysis was conducted **without access to underlying data files**, which contain private household information. Analysis based on:
-
-- Code files (.R scripts)
-- Documentation (README files)
-- Visualization outputs (plots and figures)
-- Summary statistics (aggregated results in CSV files)
-
-No individual-level data was accessed or reviewed.
+The data used in this undergraduate research project is from a study on air quality forecasting preferences in Pakistan. Professor Arman Rezaee (Department of Economics, UC Davis) is an author on the research project and provided access to the data for this analysis. The data remains private and is used here with his permission. Without access to the data, the code in this repository will not run correctly. 
 
 ## A.4 Model Abbreviations
 
@@ -624,5 +624,7 @@ In tables and file names:
 - **wd**: WTP difference / relative WTP (outcome)
 
 ---
+
+github: [text](https://github.com/teo-richard/ucd_aq_proj)
 
 **End of Report**
