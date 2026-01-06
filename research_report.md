@@ -24,7 +24,6 @@ header-includes:
 
 This undergraduate research project uses data from a study on air quality forecasting preferences in Pakistan. Professor Arman Rezaee (Department of Economics, University of California, Davis) is an author on the research project and provided access to the data.
 
-\tableofcontents
 \newpage
 
 # Executive Summary
@@ -623,8 +622,8 @@ In tables and file names:
 - **we**: WTP for EPD (outcome)
 - **wd**: WTP difference / relative WTP (outcome)
 
----
-
-github: [text](https://github.com/teo-richard/ucd_aq_proj)
+\newpage
 
 **End of Report**
+
+GitHub Repository: [https://github.com/teo-richard/ucd_aq_proj](https://github.com/teo-richard/ucd_aq_proj)
