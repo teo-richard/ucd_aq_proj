@@ -7,9 +7,9 @@ library(kableExtra)
 # What variables affect willingness to pay?
 
 # # Reading in data: small
-# df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_epd_clean.csv")
-# df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_paqi_clean.csv")
-# df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_full_clean.csv")
+# df_epd_clean = read_csv("cleaned_data/df_epd_clean.csv")
+# df_paqi_clean = read_csv("cleaned_data/df_paqi_clean.csv")
+# df_full_clean = read_csv("cleaned_data/df_full_clean.csv")
 
 # Reading in data: Large
 df_epd_clean = read_csv("cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)

@@ -3,7 +3,14 @@ df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleane
 original_analysis = read_dta("original_files/stata files/Analysis_data_saved.dta")
 edu_tib = tibble(hhid = original_analysis$hhid, dem_q7_baseline = original_analysis$dem_q7_baseline)
 
-df_full_clean = df_full_clean %>% left_join(edu_tib, by = "hhid") %>% select(-yrs_educ_formal_baseline)
+# Remove duplicates from edu_tib - keep first occurrence of each hhid
+edu_tib = edu_tib %>% distinct(hhid, .keep_all = TRUE)
+
+
+
+df_full_clean = df_full_clean %>%
+  select(-yrs_educ_formal_baseline, -dem_q7_baseline) %>%  # Remove old columns first
+  left_join(edu_tib, by = "hhid")
 
 df_full = df_full_clean %>%
   mutate(dem_q7_baseline = case_when(
@@ -31,5 +38,16 @@ df_full = df_full %>%
                                             "Postgraduate",
                                             "Other education"),
                                   ordered = TRUE))
+
+cat("Cleaning df_full\n")
+lvg_df_full = check_and_remove_high_leverage(
+  data = df_full,
+  outcome_var = "wtp_dif",
+  exclude_vars = c("epd_treatment_baseline", "wtp_paqi", "wtp_epd",
+                   "pref_baseline", "pref_endline"),
+  leverage_threshold = 0.99,
+  verbose = TRUE
+)
+df_full = lvg_df_full$cleaned_data
 
 write_csv(df_full, "/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv")

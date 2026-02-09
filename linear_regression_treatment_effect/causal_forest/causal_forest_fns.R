@@ -1,6 +1,10 @@
-create_bar_plot = function(var_name) {
-    baseline_wtp_paqi = mean(df_full_clean_contedu$wtp_paqi, na.rm = TRUE)
-    baseline_wtp_epd = mean(df_full_clean_contedu$wtp_epd, na.rm = TRUE)
+create_bar_plot = function(df, var_name) {
+    require(tidyverse)
+    require(dplyr)
+    require(purrr)
+
+    baseline_wtp_paqi = mean(df$wtp_paqi, na.rm = TRUE)
+    baseline_wtp_epd = mean(df$wtp_epd, na.rm = TRUE)
     avg_wtp = mean(c(baseline_wtp_paqi, baseline_wtp_epd))
 
     var = df_for_bar %>% pull(var_name)

@@ -5,86 +5,8 @@ library(haven)
 library(car)
 library(recipes)
 library(forcats)
+library(glue)
 
-# Find the actual problem: duplicate or perfectly correlated variables
-
-# find_perfect_correlations <- function(data) {
-#   numeric_data <- data[sapply(data, is.numeric)]
-  
-#   cat("Checking", ncol(numeric_data), "numeric variables for perfect correlations\n\n")
-  
-#   # Calculate correlation matrix
-#   cor_matrix <- cor(numeric_data, use = "pairwise.complete.obs")
-  
-#   # Find near-perfect correlations (>0.9999)
-#   cor_matrix_abs <- abs(cor_matrix)
-#   diag(cor_matrix_abs) <- 0  # Ignore diagonal
-  
-#   # Find pairs
-#   high_cor_idx <- which(cor_matrix_abs > 0.9999, arr.ind = TRUE)
-#   high_cor_idx <- high_cor_idx[high_cor_idx[,1] < high_cor_idx[,2], , drop = FALSE]
-  
-#   if(nrow(high_cor_idx) == 0) {
-#     cat("No perfect correlations found!\n")
-#     cat("Checking for correlations > 0.999:\n\n")
-    
-#     high_cor_idx <- which(cor_matrix_abs > 0.999, arr.ind = TRUE)
-#     high_cor_idx <- high_cor_idx[high_cor_idx[,1] < high_cor_idx[,2], , drop = FALSE]
-    
-#     if(nrow(high_cor_idx) == 0) {
-#       cat("No correlations > 0.999 found either.\n")
-#       cat("The problem is not perfect multicollinearity.\n")
-#       cat("Check if you have the right data or if imputation is causing issues.\n")
-#       return(invisible(NULL))
-#     }
-#   }
-  
-#   cat("Variables with correlations > 0.999:\n\n")
-  
-#   problem_vars <- character()
-  
-#   for(i in 1:nrow(high_cor_idx)) {
-#     var1 <- rownames(cor_matrix)[high_cor_idx[i,1]]
-#     var2 <- colnames(cor_matrix)[high_cor_idx[i,2]]
-#     cor_val <- cor_matrix[high_cor_idx[i,1], high_cor_idx[i,2]]
-    
-#     cat(sprintf("%.8f : %s <-> %s\n", cor_val, var1, var2))
-    
-#     problem_vars <- c(problem_vars, var1, var2)
-#   }
-  
-#   problem_vars <- unique(problem_vars)
-  
-#   cat("\n\nSuggested variables to remove (appear in multiple perfect correlations):\n")
-  
-#   # Count how many times each variable appears
-#   var_counts <- table(c(
-#     rownames(cor_matrix)[high_cor_idx[,1]],
-#     colnames(cor_matrix)[high_cor_idx[,2]]
-#   ))
-  
-#   var_counts_sorted <- sort(var_counts, decreasing = TRUE)
-#   print(var_counts_sorted[var_counts_sorted > 1])
-  
-#   cat("\n\nRECOMMENDATION: Remove these variables from your dataset:\n")
-#   cat(paste(names(var_counts_sorted)[1:min(5, length(var_counts_sorted))], collapse = "\n"))
-#   cat("\n")
-  
-#   return(invisible(list(
-#     problem_pairs = high_cor_idx,
-#     problem_vars = problem_vars,
-#     var_counts = var_counts
-#   )))
-# }
-
-# find_perfect_correlations(analysis_orig)
-
-# Run this on your data BEFORE any filtering:
-# Load your original dataset, then:
-# find_perfect_correlations(analysis_orig)
-
-# Or run it after imputation to see if imputation is causing the issue:
-# find_perfect_correlations(full_df_imputed)
 
 source("trimming_data/create_fns.R")
 
@@ -103,7 +25,11 @@ analysis_orig = read_dta("original_files/stata files/Analysis_data_large/Analysi
 analysis_orig = analysis_orig %>% 
   dplyr::select(-diff_donation_govt_W, -a_dr_epd, -a_dr_paqi) %>% 
   mutate(hhid = hhid, dem_q7_baseline = full_analysis$dem_q7_baseline)
+removal_idx = which(analysis_orig$hhid == 2110)
+analysis_orig = analysis_orig[-removal_idx, ] # Removing an observation that will become a high lev. observation in later analysis
 #analysis_orig = analysis_orig[analysis_orig$s2_q3_baseline != 150, ]
+
+
 
 analysis = analysis_orig
 # ----- RECODE VARIABLES -----
@@ -248,71 +174,6 @@ analysis = analysis %>%
 
 
 # ----- CHECK OUTLIERS -----
-find_extreme_outliers = function(data, z_threshold = 4) {
-  numeric_data = data[sapply(data, is.numeric)]
-  
-  # Track which rows have extreme outliers
-  rows_to_drop = c()
-  
-  outlier_summary = map_dfr(names(numeric_data), function(var) {
-    x = data[[var]]  # Use original data to keep row indices
-    
-    if(!is.numeric(x)) return(NULL)
-    
-    # get statistics
-    min = min(x, na.rm = TRUE)
-    mean = mean(x, na.rm = TRUE)
-    med = median(x, na.rm = TRUE)
-    max = max(x, na.rm = TRUE)
-
-    # Calculate z-scores
-    z_scores = abs((x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE))
-    
-    # Find rows with extreme values
-    extreme_rows = which(z_scores > z_threshold & !is.na(z_scores))  # Added !is.na check
-    extreme_values = x[extreme_rows]
-    
-    # Add to rows to drop
-    if(length(extreme_rows) > 0) {
-      rows_to_drop <<- unique(c(rows_to_drop, extreme_rows))
-    }
-    
-    tibble(
-      variable = var,
-      n_extreme = length(extreme_rows),
-      pct_extreme = round(length(extreme_rows) / sum(!is.na(x)) * 100, 2),
-      extreme_row_numbers = ifelse(length(extreme_rows) > 0, 
-                                    paste(head(extreme_rows, 10), collapse = ", "),
-                                    "none"),
-      extreme_values = ifelse(length(extreme_rows) > 0,
-                             paste(head(round(extreme_values, 2), 10), collapse = ", "),
-                             "none"),
-      min = min,
-      mean = mean,
-      median = med,
-      max = max
-    )
-  })
-  
-  outlier_summary = outlier_summary %>% 
-    filter(n_extreme > 0) %>%
-    arrange(desc(n_extreme))
-  
-  if(nrow(outlier_summary) > 0) {
-    cat("Variables with extreme outliers (z-score >", z_threshold, "):\n\n")
-    print(outlier_summary, n = min(20, nrow(outlier_summary)))
-  } else {
-    cat("No extreme outliers found (z-score >", z_threshold, ")\n")
-  }
-  
-  cat("\n\nTotal unique rows with extreme outliers:", length(rows_to_drop), "\n")
-  cat("Percentage of data:", round(length(rows_to_drop) / nrow(data) * 100, 2), "%\n\n")
-  
-  return(list(
-    summary = outlier_summary,
-    rows_to_drop = rows_to_drop
-  ))
-}
 
 # Use it with a check:
 outlier_check = find_extreme_outliers(analysis, z_threshold = 4)
@@ -325,6 +186,7 @@ if(length(outlier_check$rows_to_drop) > 0) {
 } else {
   cat("No rows to drop - no extreme outliers detected!\n")
 }
+
 
 
 
@@ -355,6 +217,54 @@ analysis = analysis[!is.na(analysis$wtp_epd), ]
 
 analysis = analysis[!is.na(analysis$pref_baseline), ]
 analysis = analysis[!is.na(analysis$pref_endline), ]
+
+
+
+# ------ DROPPING OUTCOME NAs ------
+
+analysis = analysis[!is.na(analysis$wtp_paqi), ]
+analysis = analysis[!is.na(analysis$wtp_epd), ]
+
+analysis = analysis[!is.na(analysis$pref_baseline), ]
+analysis = analysis[!is.na(analysis$pref_endline), ]
+
+
+
+# ----- CHECK HIGH LEVERAGE -----
+
+# This checks for observations with unusual COMBINATIONS of predictors
+# Different from z-score outlier check, which looks at variables one-at-a-time
+# High leverage observations can cause numerical instability in robust SE calculation
+
+
+# Apply leverage check
+# Create wtp_dif variable first (needed for the check)
+analysis = analysis %>% mutate(wtp_dif = wtp_paqi - wtp_epd)
+
+# Check for high leverage observations
+# We check on wtp_dif (relative WTP) as this is where the hat=1 issue appeared
+# Exclude: treatment variable and other outcome variables
+leverage_check = check_and_remove_high_leverage(
+  data = analysis,
+  outcome_var = "wtp_dif",
+  exclude_vars = c("epd_treatment_baseline", "wtp_paqi", "wtp_epd", 
+                   "pref_baseline", "pref_endline"),
+  leverage_threshold = 0.99,
+  verbose = TRUE
+)
+
+# Remove high-leverage observations if found
+if(leverage_check$n_removed > 0) {
+  cat("Updating dataset: removing", leverage_check$n_removed, 
+      "high-leverage observation(s)\n")
+  analysis = leverage_check$cleaned_data
+  cat("New sample size:", nrow(analysis), "\n\n")
+  
+  # Document which observations were removed
+  cat("Removed observations:", paste(leverage_check$removed_obs, collapse = ", "), "\n")
+  cat("Their leverage values:", paste(round(leverage_check$removed_leverage, 4), 
+                                      collapse = ", "), "\n\n")
+}
 
 
 
@@ -480,7 +390,7 @@ paqi_df_viffed = paqi_df_imputed %>% dplyr::select(-all_of(vif_to_drop)) %>%
                   mutate(wtp_dif = wtp_paqi - wtp_epd) %>% 
                   mutate(across(where(is.character), as.factor))
 
-which(sapply(full_df_clean, function(x) class(x)) == "character")
+
 
 # ------ COMBINE RARE FACTOR LEVELS ------
 combine_rare_levels = function(df, min_prop = 0.01) {
@@ -489,9 +399,79 @@ combine_rare_levels = function(df, min_prop = 0.01) {
                   ~ fct_lump_prop(as.factor(.), prop = min_prop)))
 }
 
-full_df_clean = combine_rare_levels(full_df_viffed, min_prop = 0.02)
-epd_df_clean = combine_rare_levels(epd_df_viffed, min_prop = 0.02)
-paqi_df_clean = combine_rare_levels(paqi_df_viffed, min_prop = 0.02)
+
+full_df_semi_clean = combine_rare_levels(full_df_viffed, min_prop = 0.02)
+epd_df_semi_clean = combine_rare_levels(epd_df_viffed, min_prop = 0.02)
+paqi_df_semi_clean = combine_rare_levels(paqi_df_viffed, min_prop = 0.02)
+
+# ============================================================================
+# CHECK AND REMOVE HIGH LEVERAGE FROM ALL THREE DATASETS
+# ============================================================================
+
+cat("\n")
+cat("=================================================================\n")
+cat("FINAL STEP: HIGH LEVERAGE REMOVAL\n")
+cat("=================================================================\n\n")
+
+# ----- Full Dataset -----
+cat("Cleaning FULL dataset...\n")
+leverage_full = check_and_remove_high_leverage(
+  data = full_df_semi_clean,
+  outcome_var = "wtp_dif",
+  exclude_vars = c("epd_treatment_baseline", "wtp_paqi", "wtp_epd",
+                   "pref_baseline", "pref_endline"),
+  leverage_threshold = 0.99,
+  verbose = TRUE
+)
+full_df_clean = leverage_full$cleaned_data
+
+# ----- EPD Subset -----
+cat("Cleaning EPD subset...\n")
+leverage_epd = check_and_remove_high_leverage(
+  data = epd_df_semi_clean,
+  outcome_var = "wtp_dif",
+  exclude_vars = c("epd_treatment_baseline", "wtp_paqi", "wtp_epd",
+                   "pref_baseline", "pref_endline"),
+  leverage_threshold = 0.99,
+  verbose = TRUE
+)
+epd_df_clean = leverage_epd$cleaned_data
+
+# ----- PAQI Subset -----
+cat("Cleaning PAQI subset...\n")
+leverage_paqi = check_and_remove_high_leverage(
+  data = paqi_df_semi_clean,
+  outcome_var = "wtp_dif",
+  exclude_vars = c("epd_treatment_baseline", "wtp_paqi", "wtp_epd",
+                   "pref_baseline", "pref_endline"),
+  leverage_threshold = 0.99,
+  verbose = TRUE
+)
+paqi_df_clean = leverage_paqi$cleaned_data
+
+# ----- Summary -----
+cat("=================================================================\n")
+cat("FINAL CLEANED DATASETS\n")
+cat("=================================================================\n")
+cat("full_df_clean: ", nrow(full_df_clean), "observations\n")
+cat("epd_df_clean:  ", nrow(epd_df_clean), "observations\n")
+cat("paqi_df_clean: ", nrow(paqi_df_clean), "observations\n")
+cat("=================================================================\n\n")
+
+
+
+
+dataframes = list("epd_df_clean" = epd_df_clean, "paqi_df_clean" = paqi_df_clean, "full_df_clean" = full_df_clean)
+
+for (name in names(dataframes)) {
+  print(glue("{name}: {nrow(dataframes[[name]])}"))
+}
+
+
+# *** SAMPLE SIZES ***
+# epd_df_clean: 467
+# paqi_df_clean: 462
+# full_df_clean: 929
 
 # ------ WRITING (keep commented out unless you want to write for sure) ------
 
@@ -499,11 +479,52 @@ paqi_df_clean = combine_rare_levels(paqi_df_viffed, min_prop = 0.02)
 # write_csv(paqi_df_clean, "cleaned_data/LARGE_df_paqi_clean.csv")
 # write_csv(full_df_clean, "cleaned_data/LARGE_df_full_clean.csv")
 
+
+
+# --------------------------------------------------------------------------------------------------------------------------------------------
+
 # write_csv(epd_df_clean, "cleaned_data/df_epd_clean.csv")
 # write_csv(paqi_df_clean, "cleaned_data/df_paqi_clean.csv")
 # write_csv(full_df_clean, "cleaned_data/df_full_clean.csv")
 
-ncol(df_full_clean)
+
+# LARGE is where I threw in all variables. The smaller one is where I more specifically pre-selected variables based on intuition.
+# I only use the LARGE in my analysis
+
+ncol(full_df_clean)
 
 # df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_full_clean.csv",)
-which(sapply(df_full_clean, function(x) class(x)) == "character")
+which(sapply(full_df_clean, function(x) class(x)) == "character")
+
+
+
+# SUMMARY STATISTICS --------------------------------- suuumertiiiime and the livins ez, bradleys on the micrphone with ras mg
+# me and my giiirllll we got this relationship
+# i luv her so bad but she treats me like --
+# on lockdown like a penitentiaryyyyyyyyyy she spreads her luvin all over n when i get home theres nun left for meee
+
+dataframes = list("epd_df_clean" = epd_df_clean, "paqi_df_clean" = paqi_df_clean, "full_df_clean" = full_df_clean)
+wtps = c("wtp_paqi", "wtp_epd", "wtp_dif")
+
+
+# Create an empty tibble to store results
+summary_tib <- tibble()
+
+# Loop over the list of dataframes
+for (name in names(dataframes)) {
+  df = dataframes[[name]]
+  for (wtp in wtps) {
+    s = as.data.frame(unclass(summary(df[[wtp]])))
+    s = as.data.frame(t(s))
+    s = s %>%  
+      mutate(name = name, .before = `Min.`) %>% 
+      mutate(wtp = wtp, .after = name) %>% 
+      mutate(SD = sd(df[[wtp]]))
+    summary_tib = bind_rows(summary_tib, s)
+  }
+
+}
+
+epd_df_summary = summary_tib %>% filter(name == "epd_df_clean") %>% select(-name)
+paqi_df_summary = summary_tib %>% filter(name == "paqi_df_clean") %>% select(-name)
+full_df_summary = summary_tib %>% filter(name == "full_df_clean") %>% select(-name)

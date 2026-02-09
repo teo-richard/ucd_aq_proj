@@ -1,0 +1,64 @@
+code,variable,importance
+work_total_hrs_baseline,Hours Spent on Work,0.356
+tehsil_n_baseline,Tehsil,0.124
+s3_q15v16_baseline_r_std,Relative stated pref for govt: Approval,0.081
+s3_q6_7_baseline,Received AP info from: My own observation,0.062
+s9_q7_field_count_baseline,Num SM used to gather info about social issues,0.054
+s7_q33_baseline,Was this day typical?,0.052
+dem_q1_baselineson of household head,Respondant's HH Status = Son of HH Head,0.038
+s3_q11v12_baseline_r_std,Relative stated pref for govt: Punctuality,0.036
+duration_baseline,Time form open on screen,0.029
+s3_q1_baseline,I care about AQ in places I live and work,0.022
+forecast_ability_baseline,Forecast error,0.014
+outside_total_hrs_baseline,Hours spent outside,0.012
+s6f_q3_baseline,Baseline Foreceast,0.011
+s7_q10_baseline,N. satisfactory air days,0.011
+s2_q3_baseline,Age,0.008
+s6f_q4_baseline,Confidence forecast is within 10% of actual,0.007
+air_worry_baseline,Concerned about AQ in the past week,0.006
+s7_q12_baseline,AQ significantly affects quality of life at home.,0.005
+s9_q5_3_0_baseline,No Other News Channel,0.005
+dem_q2_baseline,Total member of household,0.005
+asset_index_baseline,Asset index,0.005
+s7_q16_baseline,"Past week, reduce hrs worked significantly due to AQ",0.004
+dem_q32_baseline,Relative socioeconomic status,0.004
+num_sources_known_baseline,Number AQ sources known,0.004
+s3_q23_baseline,Donation of 100 rupees to the private citizens' group,0.003
+s7_q14_baseline,"Past week, poor AQ has affected my ability to sleep.",0.003
+s9_q4_3_1_baseline,This community group talks about AQ,0.003
+s9_q7_1_1_baselineWhatsApp,Social media platform = Whatsapp,0.003
+dem_q30_baseline,Total Number of Fans,0.003
+s3_q6_9_baseline,Received AP info from: Word of Mouth,0.002
+s7_q13_baseline,AQ significantly affects performance at work or school.,0.002
+s9_q7_3_1_baseline,This SM group talks about AQ in your neighbhorhood,0.002
+dem_q3_baseline,Any elderly individuals (>60) living with you?,0.002
+dem_q8_baseline,Number of HH members that are employed.,0.002
+dem_q22_baseline,Total Number of UPS,0.002
+dem_q24_baseline,Total Number of Motorcycle,0.002
+dem_q31_baselineDaily labour,Main income = labour,0.002
+dem_q31_baselineEarnings from trade,Main income = earnings from trade,0.002
+dem_q7_baselineSecondary/Matric,Edu = Secondary/Matric,0.002
+s6_q6_baselinebetter than today,Think AQ will be tomorrow = better than today,0.001
+s6_q6_baselineworse than today,Think AQ will be tomorrow = worse than today,0.001
+main_news_Geo_baseline,Main TV channel: Geo News,0.001
+s9_q5_3_7_baseline,ARY News - Watch Other News Channel,0.001
+s9_q5_4_1_baseline,Receive info about AQ in Pakistan from this news media?,0.001
+dem_q5_baseline,Young children (<15) living with you that you?,0.001
+dem_q14_baseline,Sewing Machine,0.001
+dem_q25_baseline,Total Number of Mobile Phones,0.001
+high_error,SMS error is 40 or above,0.001
+dem_q7_baselineMiddle (6-8),Edu = Middle,0.001
+dem_q7_baselineNo formal education,Edu = No formal,0.001
+s9_q5_3_12_baseline,City 42 - Watch Other News Channel,0
+s9_q5_field_count_baseline,Number of other news channels you watch,0
+dem_q1_baselineOther,Respondant's HH Status = Other,0
+dem_q9_baselineOwned someone else,Someone else owns house,0
+dem_q9_baselineRented,Rents house,0
+dem_q9_baselineWithout rent,House without rent,0
+dem_q31_baselineOther,Main income = other,0
+dem_q31_baselinePrivate job with a salary,Main income = private job with salary,0
+dem_q31_baselinePrivate job with self-employment,Main income = private job with employment,0
+dem_q7_baselineOther education,Edu = Other education,0
+dem_q7_baselinePostgraduate,Edu = Other,0
+dem_q7_baselinePrimary (1-5),Edu = Primary,0
+dem_q7_baselineUniversity,Edu = University,0

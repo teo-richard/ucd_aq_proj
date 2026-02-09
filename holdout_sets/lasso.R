@@ -6,11 +6,11 @@ library(readxl)
 library(here)
 
 # Reading in data: LARGE
-df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% 
+df_epd_clean = read_csv("cleaned_data/LARGE_df_epd_clean.csv") %>% 
                   mutate(across(where(is.character), as.factor)) %>% select(-hhid, -yrs_educ_formal_baseline)
-df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% 
+df_paqi_clean = read_csv("cleaned_data/LARGE_df_paqi_clean.csv") %>% 
                   mutate(across(where(is.character), as.factor)) %>% select(-hhid, -yrs_educ_formal_baseline)
-df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% 
+df_full_clean = read_csv("cleaned_data/LARGE_df_full_clean.csv") %>% 
                   mutate(across(where(is.character), as.factor)) %>% select(-hhid, -yrs_educ_formal_baseline)
 
 # Dropping outcome variables we are not looking at

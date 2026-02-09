@@ -11,3 +11,6 @@
 # Lint
 .lintr
 
+# Data
+cleaned_data/
+original_data/

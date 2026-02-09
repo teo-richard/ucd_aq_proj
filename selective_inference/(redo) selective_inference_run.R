@@ -3,9 +3,9 @@ library(readr)
 library(broom)
 
 # Reading in data: Large
-df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)
-df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)
-df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)
+df_epd_clean = read_csv("cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)
+df_paqi_clean = read_csv("cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)
+df_full_clean = read_csv("cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid, -yrs_educ_formal_baseline)
 
 
 source("selective_inference/(redo) selective_inference_fns.R")

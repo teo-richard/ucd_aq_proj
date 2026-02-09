@@ -5,10 +5,10 @@ library(haven)
 
 # Note: Using categorical education because this makes more sense intuitively (vs. continuous education)
 
-df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
-df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
+df_epd_clean = read_csv("cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
+df_paqi_clean = read_csv("cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
 # df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid, -dem_q7_baseline) # this one has continuous education
-df_full_clean_catedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
+df_full_clean_catedu = read_csv("leaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
 
 full_analysis = read_dta("original_files/stata files/Analysis_data_saved.dta")
 original_mean <- mean(full_analysis$s3_q15v16_baseline_r, na.rm = TRUE)
@@ -16,9 +16,9 @@ original_sd <- sd(full_analysis$s3_q15v16_baseline_r, na.rm = TRUE)
 a = (df_full_clean_catedu$s3_q15v16_baseline_r_std * original_sd) + original_mean
 table(a)
 
-map = read_excel("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/variable_labels_filtered.xlsx")
+map = read_excel("cleaned_data/variable_labels_filtered.xlsx")
 
-source("/Users/teorichard/Downloads/UCD Research/AQ UCD/linear_regression_treatment_effect/causal_forest/causal_forest_fns.R")
+source("linear_regression_treatment_effect/causal_forest/causal_forest_fns.R")
 
 # ----- RUNNING CAUSAL FOREST -----
 df_ready_modelling = df_full_clean_catedu %>% dplyr::select(-all_of(c("wtp_paqi", "wtp_epd", "wtp_dif", "epd_treatment_baseline", "pref_baseline", "pref_endline")))
@@ -40,6 +40,9 @@ var_imp_codes = colnames(x_vars)
 meaning = map$Label[match(colnames(x_vars), map$Variable)]
 var_imp_df = tibble(code = var_imp_codes, variable = meaning, importance = var_imp)
 var_imp_df_ar = var_imp_df %>% arrange(desc(importance))
+var_imp_df_ar[, 3] = unlist(var_imp_df_ar[, 3])
+
+write_csv(var_imp_df_ar, "linear_regression_treatment_effect/causal_forest/variable_importance_df.csv")
 
 
 # ----- TREATMENT EFFECT PREDICTIONS -----
@@ -93,20 +96,20 @@ df_for_bar =
 
 
 
-create_bar_plot("work_total_hrs_baseline")
+create_bar_plot(df = df_full_clean_catedu, var_name = "work_total_hrs_baseline")
 ggsave("linear_regression_treatment_effect/causal_forest/images/work_hrs.png", width = 5, height = 2.5, dpi = 300)
 ggsave("linear_regression_treatment_effect/causal_forest/images/work_hrs_whitebg.png", width = 5, height = 2.5, dpi = 300, bg = "white") # white background
 
-create_bar_plot("tehsil_n_baseline")
+create_bar_plot(df = df_full_clean_catedu, "tehsil_n_baseline")
 ggsave("linear_regression_treatment_effect/causal_forest/images/tehsil.png", width = 5, height = 2.5, dpi = 300)
 
-create_bar_plot("s3_q15v16_baseline_r_std")
+create_bar_plot(df = df_full_clean_catedu, "s3_q15v16_baseline_r_std")
 ggsave("linear_regression_treatment_effect/causal_forest/images/gov_approval.png", width = 5, height = 2.5, dpi = 300)
 
-create_bar_plot("s3_q6_7_baseline")
+create_bar_plot(df = df_full_clean_catedu, "s3_q6_7_baseline")
 ggsave("linear_regression_treatment_effect/causal_forest/images/ap_info_myobs.png", width = 5, height = 2.5, dpi = 300)
 
-create_bar_plot("s9_q7_field_count_baseline")
+create_bar_plot(df = df_full_clean_catedu, "s9_q7_field_count_baseline")
 ggsave("linear_regression_treatment_effect/causal_forest/images/num_social_media.png", width = 5, height = 2.5, dpi = 300)
 
 
@@ -115,6 +118,10 @@ blp = best_linear_projection(cf, x_vars[,c(
     "work_total_hrs_baseline")])
 
 saveRDS(blp, "blp_results.rds")
+
+
+summary(df_full_clean_catedu$work_total_hrs_baseline)
+
 
 # ----- TABLE SUMMARY -----
 

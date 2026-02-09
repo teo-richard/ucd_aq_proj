@@ -221,3 +221,150 @@ vif_prune = function(data, outcome, threshold = 2.5) {
 }
 
 
+find_extreme_outliers = function(data, z_threshold = 4) {
+  numeric_data = data[sapply(data, is.numeric)]
+  
+  # Track which rows have extreme outliers
+  rows_to_drop = c()
+  
+  outlier_summary = map_dfr(names(numeric_data), function(var) {
+    x = data[[var]]  # Use original data to keep row indices
+    
+    if(!is.numeric(x)) return(NULL)
+    
+    # get statistics
+    min = min(x, na.rm = TRUE)
+    mean = mean(x, na.rm = TRUE)
+    med = median(x, na.rm = TRUE)
+    max = max(x, na.rm = TRUE)
+
+    # Calculate z-scores
+    z_scores = abs((x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE))
+    
+    # Find rows with extreme values
+    extreme_rows = which(z_scores > z_threshold & !is.na(z_scores))  # Added !is.na check
+    extreme_values = x[extreme_rows]
+    
+    # Add to rows to drop
+    if(length(extreme_rows) > 0) {
+      rows_to_drop <<- unique(c(rows_to_drop, extreme_rows))
+    }
+    
+    tibble(
+      variable = var,
+      n_extreme = length(extreme_rows),
+      pct_extreme = round(length(extreme_rows) / sum(!is.na(x)) * 100, 2),
+      extreme_row_numbers = ifelse(length(extreme_rows) > 0, 
+                                    paste(head(extreme_rows, 10), collapse = ", "),
+                                    "none"),
+      extreme_values = ifelse(length(extreme_rows) > 0,
+                             paste(head(round(extreme_values, 2), 10), collapse = ", "),
+                             "none"),
+      min = min,
+      mean = mean,
+      median = med,
+      max = max
+    )
+  })
+  
+  outlier_summary = outlier_summary %>% 
+    filter(n_extreme > 0) %>%
+    arrange(desc(n_extreme))
+  
+  if(nrow(outlier_summary) > 0) {
+    cat("Variables with extreme outliers (z-score >", z_threshold, "):\n\n")
+    print(outlier_summary, n = min(20, nrow(outlier_summary)))
+  } else {
+    cat("No extreme outliers found (z-score >", z_threshold, ")\n")
+  }
+  
+  cat("\n\nTotal unique rows with extreme outliers:", length(rows_to_drop), "\n")
+  cat("Percentage of data:", round(length(rows_to_drop) / nrow(data) * 100, 2), "%\n\n")
+  
+  return(list(
+    summary = outlier_summary,
+    rows_to_drop = rows_to_drop
+  ))
+}
+
+
+
+
+check_and_remove_high_leverage = function(data, outcome_var, exclude_vars, 
+                                          leverage_threshold = 0.99,
+                                          verbose = TRUE) {
+  # Purpose: Identify and remove observations with perfect or near-perfect leverage
+  # These observations have unique combinations of predictors that make them
+  # perfectly predictable, causing hat value = 1 and numerical errors
+  
+  # Prepare data for model
+  # Remove outcome variable and any variables we don't want as predictors
+  model_data = data %>% select(-all_of(exclude_vars))
+  
+  # Fit model to calculate leverage
+  # Using all available predictors to predict the outcome
+  formula_str = paste(outcome_var, "~ .")
+  mod = lm(as.formula(formula_str), data = model_data)
+  
+  # Extract leverage values (hat values)
+  # Hat value measures how unusual this observation's X values are
+  # Range: 1/n to 1, where 1 = perfect leverage (unique combination)
+  lev = hatvalues(mod)
+  
+  # Get model diagnostics
+  n = nobs(mod)  # Number of observations in fitted model
+  k = length(coef(mod))  # Number of parameters (including intercept)
+  avg_leverage = k / n  # Average leverage across all observations
+  
+  # Find problematic observations
+  # Threshold = 0.99 catches observations with perfect or near-perfect leverage
+  # These cause numerical instability in robust SE estimation
+  high_lev_obs = which(lev >= leverage_threshold)
+  
+  if(verbose) { # Claude created this vebose to help me figure out what is GOING ON
+    cat("\n")
+    cat("=================================================================\n")
+    cat("HIGH LEVERAGE DIAGNOSTIC\n")
+    cat("=================================================================\n")
+    cat("Outcome variable:", outcome_var, "\n")
+    cat("Sample size:", n, "\n")
+    cat("Number of predictors (k):", k, "\n")
+    cat("Average leverage (k/n):", round(avg_leverage, 4), "\n")
+    cat("Maximum leverage:", round(max(lev), 4), "\n")
+    cat("High leverage threshold:", leverage_threshold, "\n\n")
+    
+    # Report findings
+    if(length(high_lev_obs) > 0) {
+      cat("WARNING: Found", length(high_lev_obs), 
+          "observation(s) with leverage >=", leverage_threshold, "\n")
+      cat("  These observations have unique covariate patterns\n")
+      cat("  Observation numbers:", paste(high_lev_obs, collapse = ", "), "\n")
+      cat("  Leverage values:", paste(round(lev[high_lev_obs], 4), collapse = ", "), "\n\n")
+      cat("REMOVING these observations to prevent numerical instability\n")
+      cat("=================================================================\n\n")
+    } else {
+      cat("✓ No high-leverage observations detected\n")
+      cat("  All observations have leverage <", leverage_threshold, "\n")
+      cat("=================================================================\n\n")
+    }
+  }
+  
+  # Return results
+  if(length(high_lev_obs) > 0) {
+    return(list(
+      cleaned_data = data[-high_lev_obs, ],  # Data with high-leverage obs removed
+      removed_obs = high_lev_obs,            # Which observations were removed
+      removed_leverage = lev[high_lev_obs],  # Their leverage values
+      n_removed = length(high_lev_obs),      # Count of removed observations
+      max_leverage_before = max(lev)         # Maximum leverage before removal
+    ))
+  } else {
+    return(list(
+      cleaned_data = data,                   # No changes needed
+      removed_obs = integer(0),              # Nothing removed
+      removed_leverage = numeric(0),
+      n_removed = 0,
+      max_leverage_before = max(lev)
+    ))
+  }
+}

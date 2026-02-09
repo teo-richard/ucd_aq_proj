@@ -5,9 +5,9 @@ library(Matrix)
 library(broom)
 library(corrplot)
 
-df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_epd_clean.csv")
-df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_paqi_clean.csv")
-df_full_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/df_full_clean.csv")
+df_epd_clean = read_csv("cleaned_data/df_epd_clean.csv")
+df_paqi_clean = read_csv("cleaned_data/df_paqi_clean.csv")
+df_full_clean = read_csv("cleaned_data/df_full_clean.csv")
 
 
 drop_other_vars = function(data, outcome) {
