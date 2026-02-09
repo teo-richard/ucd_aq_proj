@@ -14,3 +14,9 @@
 # Data
 cleaned_data/
 original_files/
+
+# Claude
+.claude
+
+# Other
+.here
