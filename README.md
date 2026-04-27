@@ -84,7 +84,7 @@ This is a very interesting finding and supports the "mere exposure effect" that 
 
 #### Technical details (relative WTP)
 
-Using OLS with robust standard errors (HC1), the treatment effect on relative WTP (PAQI minus EPD) is strong:
+Using OLS with standard errors clustered by geographic grid cell (`grid_id`), the treatment effect on relative WTP (PAQI minus EPD) is strong:
 
 | Model | R² | Treatment Coefficient | p-value |
 |---|---|---|---|
@@ -102,7 +102,7 @@ These results are robust to random sample splitting: the treatment-only R² aver
 
 #### Absolute WTP
 
-I also looked at the treatment effect on absolute WTP using OLS with robust standard errors (HC1). Treatment weakly predicts absolute WTP for PAQI (R² = 0.012, p = 0.001) and for EPD (R² = 0.015, p < 0.001), but does **not** predict total WTP (R² ≈ 0, p = 0.831). This means treatment shifts which service people prefer, but not how much they're willing to spend overall.
+I also looked at the treatment effect on absolute WTP using OLS with standard errors clustered by geographic grid cell (`grid_id`). Treatment weakly predicts absolute WTP for PAQI (R² = 0.012, p = 0.001) and for EPD (R² = 0.015, p < 0.001), but does **not** predict total WTP (R² ≈ 0, p = 0.831). This means treatment shifts which service people prefer, but not how much they're willing to spend overall.
 
 ### Heterogeneous treatment effects
 
@@ -148,4 +148,4 @@ I give this project a 10/10 in terms of learning opportunity. Thanks to Professo
 
 ## Extra Note
 
-I had "finished" this project in December 2025 but decided to present at the UC Davis Undergraduate Research Conference. When reviewing my project I realized there were some kind of important stones I'd left unturned, so I spent a bit of time updating the project. The second most important of these "updates" was looking into the treatment effect of absolute willingness to pay, both specific to PAQI and EPD, as well as the total willingness to pay. It didn't add too much but I think it is important to have in the project. But the *most* important was definitely also a huge learning opportunity—I didn't remove high-leverage points OR use robust SEs even though I was working with survey data! In the spirit of honesty, I'm going to out myself here for the world to read and judge me, but after I got over my embarrassment, I fixed it all up. It's not perfect as I don't have any geographic variables so I can't cluster SEs but hey, the world is a mess and I think the fact that I didn't cluster my standard errors is the least of your worries.
+I had "finished" this project in December 2025 but decided to present at the UC Davis Undergraduate Research Conference. When reviewing my project I realized there were some kind of important stones I'd left unturned, so I spent a bit of time updating the project. The second most important of these "updates" was looking into the treatment effect of absolute willingness to pay, both specific to PAQI and EPD, as well as the total willingness to pay. It didn't add too much but I think it is important to have in the project. But the *most* important was definitely also a huge learning opportunity—I didn't remove high-leverage points OR use robust SEs even though I was working with survey data! In the spirit of honesty, I'm going to out myself here for the world to read and judge me, but after I got over my embarrassment, I fixed it all up. Standard errors are clustered by geographic grid cell (`grid_id`) to account for within-cluster correlation across nearby households.

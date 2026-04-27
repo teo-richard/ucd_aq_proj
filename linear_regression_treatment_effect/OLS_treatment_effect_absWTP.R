@@ -71,10 +71,13 @@ total_wtp_mod_robust = coeftest(total_wtp_mod, vcov = vcovHC(total_wtp_mod, type
 summary(total_wtp_mod)
 
 # R-squared = about 0
-# F statistic pvaleu = 0.831
-# epd_treatment_baseline estimate = 1.851, pvalue = 0.831
+# F statistic pvaleu = 0.839
+# epd_treatment_baseline estimate = 1.802, pvalue = 0.839
 
 
 
 # So basically the R-squared for absolute WTP PAQI and absolute WTP EPD is quite low and is about 0 for total WTP
 # Treatment does *not* predict absolute and total willingness top pay very well
+
+
+print("Done.")

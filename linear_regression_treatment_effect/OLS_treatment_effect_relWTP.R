@@ -4,18 +4,21 @@ library(effsize)
 library(texreg)
 library(sandwich)
 library(lmtest)
+library(glue)
 
 # What is the effect of *treatment* on willingness to pay? (WTP for PAQI and EPD)
 
 # Note: using categorical education
 
+id = read_csv("original_files/csv files/Analysis_data_saved.csv") %>% select(hhid, grid_id_baseline)
+
 
 # Reading in data: Large
-df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
-df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
+# df_epd_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_epd_clean.csv") %>% select(-hhid)
+# df_paqi_clean = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_paqi_clean.csv") %>% select(-hhid)
 # df_full_clean_contedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean.csv") %>% select(-hhid) # this one has continuous education
-df_full_clean_catedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv") %>% select(-hhid)
-
+df_full_clean_catedu = read_csv("/Users/teorichard/Downloads/UCD Research/AQ UCD/cleaned_data/LARGE_df_full_clean_catedu.csv")
+df_full_clean_catedu = left_join(df_full_clean_catedu, id, by = "hhid") %>% select(-hhid)
 
 # Dropping outcome variables we are not looking at
 drop_vars_wtp_paqi = c("pref_baseline", "pref_endline", "wtp_epd", "wtp_dif")
@@ -48,9 +51,7 @@ df_full_clean_catedu_wtp_dif = df_full_clean_catedu %>%
 treatment_only_mod = lm(wtp_dif ~ epd_treatment_baseline,
             data = df_full_clean_catedu_wtp_dif)
 
-treatment_only_mod_robust = coeftest(treatment_only_mod, vcov = vcovHC(treatment_only_mod, type = "HC3"))
-
-
+treatment_only_mod_robust = coeftest(treatment_only_mod, vcov = vcovCL(treatment_only_mod, cluster = ~grid_id_baseline))
 
 summary(treatment_only_mod)
 # R-squared = 0.424, pvalue = 0
@@ -72,14 +73,14 @@ texreg(
 
 
 dif_no_treat_mod = lm(wtp_dif ~ ., data = df_full_clean_catedu_wtp_dif %>% select(-epd_treatment_baseline))
-dif_no_treat_mod_robust = coeftest(dif_no_treat_mod, vcov = vcovHC(dif_no_treat_mod, type = "HC3"))
+dif_no_treat_mod_robust = coeftest(dif_no_treat_mod, vcov = vcovCL(dif_no_treat_mod, cluster = ~grid_id_baseline))
 summary(dif_no_treat_mod)
 
 # R-squared = 0.0709, F-statistic p-value 0.3805
 
 # ///// PREDICT RELATIVE WTP, ALL VARIABLES \\\\\
 full_mod = lm(wtp_dif ~ ., data = df_full_clean_catedu_wtp_dif)
-full_mod_robust = coeftest(full_mod, vcov = vcovHC(full_mod, type = "HC3"))
+full_mod_robust = coeftest(full_mod, vcov = vcovCL(full_mod, cluster = ~grid_id_baseline))
 summary(full_mod)
 # epd_treatment_baseline is still highly significant (p = 0)
 # R-squared = 0.460 (so adding all other variables to a model with treatment only increases R-squared by .036)
@@ -100,78 +101,45 @@ caption.above = TRUE
 )
 
 
-# --------------- SPLIT DATASET INTO RANDOM HALVES ---------------------------------------------
-# to see if we get same results using less observations
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# --------------- More random splits ---------------------------------------------
+# Get bootstrap samples, run regression with all variables, get the min coefficient, max coefficient, sd, and average
 
 set.seed(123)
-idx1 = sample(1:nrow(df_full_clean_catedu_wtp_dif), size = 0.5*nrow(df_full_clean_catedu_wtp_dif), replace = FALSE)
-first_half_dat = df_full_clean_catedu_wtp_dif[idx1, ]
-second_half_dat = df_full_clean_catedu_wtp_dif[-idx1, ]
-
-# ///// PREDICT RELATIVE WTP, TREATMENT ONLY \\\\\
-treatment_only_mod_1st_half = lm(wtp_dif ~ epd_treatment_baseline,
-            data = first_half_dat)
-treatment_only_mod_1st_half_robust = coeftest(treatment_only_mod_1st_half, vcov = vcovHC(treatment_only_mod_1st_half, type = "HC3"))
-summary(treatment_only_mod_1st_half)
-# R-squared = 0.4355, F-statistic pvalue = 0
-# Coef = -31.264
-
-treatment_only_mod_2nd_half = lm(wtp_dif ~ epd_treatment_baseline,
-            data = second_half_dat)
-treatment_only_mod_2nd_half_robust = coeftest(treatment_only_mod_2nd_half, vcov = vcovHC(treatment_only_mod_2nd_half, type = "HC3"))
-summary(treatment_only_mod_2nd_half)
-# R-squared = 0.4144, F-statistic pvalue = 0
-# Coef = -32.9039
-
-# Average R-squared = 0.425
+coefs = c()
+r_sq_vals = c()
+pvals = c()
+for (i in 1:10000) {
+  boot = df_full_clean_catedu_wtp_dif[sample(nrow(df_full_clean_catedu_wtp_dif), size = nrow(df_full_clean_catedu_wtp_dif), replace = TRUE), ] # size = 929
+  mod = lm(wtp_dif ~ ., data = boot)
+  mod_robust = tryCatch(
+    coeftest(mod, vcov = vcovCL(mod, cluster = ~grid_id_baseline)),
+    error = function(e) NULL
+  )
+  if (is.null(mod_robust)) next
+  tidy_robust = tidy(mod_robust)
+  row = tidy_robust[tidy_robust$term == "epd_treatment_baseline", ]
+  if (nrow(row) == 0 || is.nan(row$p.value)) next
+  coefs = c(coefs, row$estimate)
+  r_sq_vals = c(r_sq_vals, summary(mod)$r.squared)
+  pvals = c(pvals, row$p.value)
+}
 
 
-# ///// PREDICT RELATIVE WTP, NO TREATMENT ALL OTHER VARIABLES \\\\\
-dif_no_treat_1st_half = lm(wtp_dif ~ ., data = first_half_dat %>% select(-epd_treatment_baseline))
-dif_no_treat_1st_half_robust = coeftest(dif_no_treat_1st_half, vcov = vcovHC(dif_no_treat_1st_half, type = "HC3"))
-
-summary(dif_no_treat_1st_half)
-# R-squared = 0.1232, F-statistic p-value 0.7053
-
-dif_no_treat_2nd_half = lm(wtp_dif ~ ., data = second_half_dat %>% select(-epd_treatment_baseline))
-dif_no_treat_2nd_half_robust = coeftest(dif_no_treat_2nd_half, vcov = vcovHC(dif_no_treat_2nd_half, type = "HC3"))
-
-summary(dif_no_treat_2nd_half)
-# R-squared = 0.1424, F-statistic p-value 0.3675
-
-# Average R-squared: 0.133
-
-
-# ///// PREDICT RELATIVE WTP, ALL VARIABLES \\\\\
-full_mod_1st_half = lm(wtp_dif ~ ., data = first_half_dat)
-full_mod_1st_half_robust = coeftest(full_mod_1st_half, vcov = vcovHC(full_mod_1st_half, type = "HC3"))
-summary(full_mod_1st_half)
-# epd_treatment_baseline is still highly significant (p = 0)
-# R-squared = 0.5139
-# F-statistic P-value = 0
-# Coef = -31.176
-
-full_mod_2nd_half = lm(wtp_dif ~ ., data = second_half_dat)
-full_mod_2nd_half_robust = coeftest(full_mod_2nd_half, vcov = vcovHC(full_mod_2nd_half, type = "HC3"))
-summary(full_mod_2nd_half)
-# R-squared = 0.4841
-# F-statistic P-value = 0
-# Coef = -33.7
-
-# Average R-squared = 0.499
-
-# So adding other variables to the model with treatment only increases avg R-squared from 0.425 to 0.499 = 0.074 increase
-# So not trivial but not a lot either... and epd_treatment_baseline is highly significant (p is about 0) in both models
-
-
-# Overall despite using half of the data to mimic the smaller sample size when splitting by treatment group, the R-squared is about the same ish 
-#   (still in the 0.4 to 0.52 range). And the coefs are all similar (about -30 to -34 range)
-
-# The R-squared increase from adding all other variables to a model with treatment only is slightly higher, but fairly close (about 0.074 increase vs. 0.036)
-
-
-# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# The below is not updated with the cluster SEs
+print("\nCoefficients:")
+print(glue("Min: {min(coefs)}, Mean: {mean(coefs)}, Max: {max(coefs)}, SD: {sd(coefs)}"))
+# Min: -37.6862643093335, Mean: -32.2478280018987, Max: -26.9929110608757, SD: 1.61589066251891
+print("\nR-Squared")
+print(glue("Min: {min(r_sq_vals)}, Mean: {mean(r_sq_vals)}, Max: {max(r_sq_vals)}"))
+# Min: 0.437636689988627, Mean: 0.495745645110446, Max: 0.562690955093505
+print("\nP-values")
+print(glue("Min: {min(pvals)}, Mean: {mean(pvals)}, Max: {max(pvals)}"))
+# Min: 2.49878788334361e-113, Mean: 1.01647757974899e-80, Max: 1.01552702668007e-77
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

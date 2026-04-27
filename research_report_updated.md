@@ -215,7 +215,7 @@ Given that relative WTP showed strong predictive performance while absolute WTP 
 
 **File**: `linear_regression_treatment_effect/OLS_treatment_effect_relWTP.R`
 
-All models use **HC3 heteroskedasticity-robust standard errors** (via the `sandwich` package). Clustering was not feasible because the dataset does not contain geographic cluster identifiers.
+All models use **standard errors clustered by geographic grid cell** (`grid_id`, via `sandwich::vcovCL()`), which accounts for within-cluster correlation among nearby households.
 
 Three model specifications were compared:
 
@@ -227,7 +227,7 @@ Table 2: **Treatment Effect Model Comparison — Relative WTP (Full Dataset, n =
 | All covariates (no treatment) | 0.071 | 0.381 (ns) | — |
 | Treatment + all covariates | 0.460 | < 0.001*** | -32.0 |
 
-*Note: \*\*\* indicates p < 0.001; ns = not significant. Standard errors are HC3-robust.*
+*Note: \*\*\* indicates p < 0.001; ns = not significant. Standard errors are clustered by `grid_id`.*
 
 ### Key Observations
 
@@ -268,21 +268,21 @@ Treatment explains approximately **6 times more variance** in relative WTP than 
 
 **Figure 2**: Density distributions of relative WTP shifted by the estimated treatment effect (-32 PKR). The orange distribution shows WTP shifted down by the treatment effect; the purple distribution shows WTP shifted up. Dashed lines indicate ±1 SD. The clear separation between shifted distributions illustrates that the treatment effect is larger than the natural spread of preferences—consistent with a Cohen's d exceeding 1.7.
 
-### Stability Across Random Splits
+### Stability Across Bootstrap Samples
 
-To check stability of the treatment effect estimate, the full dataset was randomly split in half multiple times:
+To check stability of the treatment effect estimate, 1000 standard bootstrap samples (n = 929, with replacement) were drawn and the full model refit on each:
 
-- Treatment coefficients range: -31.2 to -33.7 PKR
-- R² range: 0.41 to 0.51
-- Treatment remains highly significant (p < 0.001) across all splits
+- Treatment coefficient: mean **-32.2 PKR**, SD 1.6, range -37.7 to -27.0 PKR
+- R² range: 0.44 to 0.56
+- Treatment remains highly significant (p < 0.001) across all bootstrap iterations (max p-value ~1.0e-77)
 
-This indicates the treatment effect estimate is stable and not driven by particular observations.
+The narrow SD of 1.6 PKR around a mean of -32.2 PKR indicates the treatment effect estimate is stable and not driven by particular observations.
 
 ## 4.2 Absolute and Total WTP
 
 **File**: `linear_regression_treatment_effect/OLS_treatment_effect_absWTP.R`
 
-To investigate whether treatment predicts absolute WTP (not just relative preference), treatment-only models were fit for WTP for PAQI alone, WTP for EPD alone, and total WTP (WTP PAQI + WTP EPD). All models use HC3-robust standard errors.
+To investigate whether treatment predicts absolute WTP (not just relative preference), treatment-only models were fit for WTP for PAQI alone, WTP for EPD alone, and total WTP (WTP PAQI + WTP EPD). All models use standard errors clustered by `grid_id`.
 
 Table 3: **Treatment Effect on Absolute and Total WTP (Full Dataset, n = 929)**
 
@@ -446,10 +446,18 @@ It is intuitive that exposure to a service would influence relative preference. 
 - Effect size: **-32.0 PKR** difference in relative WTP
 - **Cohen's d = 1.71** (95% CI: [1.56, 1.86])—more than twice the "large" threshold (0.8)
 - Near-perfect separation in binary preference analysis
-- HC3-robust standard errors confirm significance
-- Coefficient stable across random splits (-31.2 to -33.7 PKR)
+- Clustered standard errors (`grid_id`) confirm significance
+- Coefficient stable across 1000 bootstrap samples (mean -32.2 ± 1.6 PKR, range -37.7 to -27.0)
 
 **Interpretation**: Which air quality forecasting service a household receives is by far the strongest predictor of which service they will prefer and be willing to pay for. The magnitude of this effect is not merely statistically significant—a Cohen's d of 1.71 places it well above the conventional "large" threshold and indicates that the treatment-induced preference gap exceeds the natural person-to-person variation in service preferences. Source attribution alone, with identical forecasting content, generates a preference shift of approximately 32 PKR that is larger than one would expect from any combination of demographic, behavioral, or household characteristics.
+
+An effect of this magnitude is rare and warrants scrutiny. A plausible concern is that respondents who lacked well-formed prior preferences may anchor their WTP responses to the most salient available cue, which in this case is the attributed source.
+
+
+This interpretation does not necessarily diminish the policy relevance of the finding. The RCT identifies the effect of source attribution on stated WTP, but stated WTP in this setting likely reflects anchoring rather than stable preferences. However, this is \textbf{evidence that when respondents in this setting lack well-formed prior preferences, they anchor almost entirely to the most salient available cue--in this case, source attribution.} 
+
+If source attribution functions as a near-deterministic anchor rather than a mild credibility signal, it implies that government services could shift consumer preferences at very low cost through salient branding alone. This could imply a stronger, not weaker, basis for communication-based policy intervention. 
+
 
 ## Finding 2: Treatment Does Not Predict Absolute or Total WTP
 
@@ -529,9 +537,8 @@ The study employed multiple complementary approaches:
 - Best subset selection was considered but not used because the final dataset was too large
 
 **Robust Inference**:
-- Treatment effect OLS models use HC3 heteroskedasticity-robust standard errors (via the `sandwich` and `lmtest` packages)
-- Clustering was not feasible due to the absence of geographic cluster identifiers in the dataset
-- HC3 robust standard errors are preferred over HC0-HC2 for finite-sample correction
+- Treatment effect OLS models use standard errors clustered by geographic grid cell (`grid_id`) via `sandwich::vcovCL()` and `lmtest::coeftest()`
+- Clustering by `grid_id` accounts for within-cluster correlation among households in the same geographic area
 
 **Strength**: Agreement across methods that few variables consistently predict absolute WTP strengthens this negative finding. Different approaches (frequentist OLS, regularized Lasso, Bayesian Spike-and-Slab) all point to the same conclusion despite different assumptions and selection mechanisms.
 
@@ -649,7 +656,7 @@ The study demonstrates the value of:
 1. **Exploratory, data-driven approaches** that let findings guide analysis rather than testing pre-specified hypotheses
 2. **Triangulation across methods** to identify robust patterns (treatment dominance) and method-specific limitations (Lasso underperformance)
 3. **Causal forests for heterogeneity discovery** that reveal systematic variation in treatment effects even when average effects dominate
-4. **Robust inference** using HC3 heteroskedasticity-robust standard errors to address potential heteroskedasticity in treatment effect estimation
+4. **Robust inference** using standard errors clustered by geographic grid cell (`grid_id`) to account for within-cluster correlation in treatment effect estimation
 
 ### Policy Contribution
 
@@ -671,7 +678,6 @@ The findings suggest that **increasing exposure** to government air quality fore
 - No direct income variable (work hours used as proxy)
 - Cross-sectional treatment assignment limits causal interpretation of mechanisms
 - Survey-based WTP may not reflect actual behavior
-- No geographic cluster identifiers available for clustered standard errors
 
 **Methodological limitations**:
 - Selective inference package assumptions not met; results not included
@@ -703,7 +709,7 @@ The findings suggest that **increasing exposure** to government air quality fore
 - **Significance testing**: F-tests and t-tests
 - **Multiple comparison correction**: Benjamini-Hochberg procedure
 - **Model selection**: Stepwise selection based on AIC
-- **Robust inference (treatment effect models)**: HC3 heteroskedasticity-robust standard errors via `sandwich::vcovHC()` and `lmtest::coeftest()`
+- **Robust inference (treatment effect models)**: Standard errors clustered by `grid_id` via `sandwich::vcovCL()` and `lmtest::coeftest()`
 
 ### Lasso Regression
 - **Software**: R `glmnet` package
